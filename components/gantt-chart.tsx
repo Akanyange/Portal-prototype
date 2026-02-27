@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Plus, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
@@ -167,7 +167,11 @@ const projects: GanttProject[] = [
 
 export function GanttChart() {
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
-  const todayFraction = getCurrentYearFraction()
+  const [todayFraction, setTodayFraction] = useState<number | null>(null)
+
+  useEffect(() => {
+    setTodayFraction(getCurrentYearFraction())
+  }, [])
 
   const toggle = (id: string) =>
     setExpanded(prev => {
@@ -259,11 +263,13 @@ export function GanttChart() {
                 />
               ))}
 
-              {/* Today line */}
-              <div
-                className="absolute top-0 bottom-0 w-[1.5px] bg-primary/70 z-20 pointer-events-none"
-                style={{ left: `${todayFraction * 100}%` }}
-              />
+              {/* Today line — only rendered client-side to avoid hydration mismatch */}
+              {todayFraction !== null && (
+                <div
+                  className="absolute top-0 bottom-0 w-[1.5px] bg-primary/70 z-20 pointer-events-none"
+                  style={{ left: `${todayFraction * 100}%` }}
+                />
+              )}
 
               {projects.map(project => (
                 <div
