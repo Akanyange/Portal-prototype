@@ -34,7 +34,7 @@ export default function OverviewPage() {
           <CardHeader className="pb-1 pt-2 px-5">
             <div className="flex items-center gap-2 text-primary">
               <LayoutList className="h-4 w-4 shrink-0" />
-              <CardTitle className="text-sm font-medium text-foreground">All Projects Statuses</CardTitle>
+              <CardTitle className="text-sm font-medium text-foreground">All Projects Status</CardTitle>
             </div>
           </CardHeader>
           <CardContent className="px-5 pb-2 space-y-1">
