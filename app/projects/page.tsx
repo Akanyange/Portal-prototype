@@ -1,11 +1,10 @@
 "use client"
 
 import { useState } from "react"
-import { Plus } from "lucide-react"
+import { Plus, LayoutList, GanttChartSquare } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ProjectsTable } from "@/components/projects-table"
 import { GanttChart } from "@/components/gantt-chart"
-import { ProjectFilters } from "@/components/project-filters"
 
 type View = "list" | "timeline"
 
@@ -14,7 +13,8 @@ export default function ProjectsPage() {
 
   return (
     <div className="space-y-5">
-      {/* ── Page header ─────────────────────────────────────────────────────── */}
+
+      {/* ── Page header ───────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold tracking-tight">All Projects</h1>
         <Button className="rounded-full px-5 gap-2 bg-primary text-primary-foreground hover:bg-primary/90">
@@ -23,10 +23,33 @@ export default function ProjectsPage() {
         </Button>
       </div>
 
-      {/* ── Filters + view tabs ─────────────────────────────────────────────── */}
-      <ProjectFilters activeView={view} onViewChange={setView} />
+      {/* ── View tabs ─────────────────────────────────────────────────────── */}
+      <div className="flex items-center border-b">
+        <button
+          onClick={() => setView("list")}
+          className={`flex items-center gap-1.5 px-4 py-2.5 text-sm border-b-2 -mb-px transition-colors ${
+            view === "list"
+              ? "border-primary text-primary font-medium"
+              : "border-transparent text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <LayoutList className="h-4 w-4" />
+          Projects List
+        </button>
+        <button
+          onClick={() => setView("timeline")}
+          className={`flex items-center gap-1.5 px-4 py-2.5 text-sm border-b-2 -mb-px transition-colors ${
+            view === "timeline"
+              ? "border-primary text-primary font-medium"
+              : "border-transparent text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <GanttChartSquare className="h-4 w-4" />
+          Projects Timeline
+        </button>
+      </div>
 
-      {/* ── Content ─────────────────────────────────────────────────────────── */}
+      {/* ── Content ───────────────────────────────────────────────────────── */}
       {view === "list" ? <ProjectsTable /> : <GanttChart />}
     </div>
   )

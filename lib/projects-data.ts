@@ -1,6 +1,7 @@
-export type ProjectStatus = "on-track" | "at-risk" | "paused" | "off-track"
-export type TaskStatus    = "not-started" | "in-progress" | "completed"
+export type ProjectStatus  = "on-track" | "at-risk" | "paused" | "off-track"
+export type TaskStatus     = "not-started" | "in-progress" | "completed"
 export type MilestoneStatus = "completed" | "not-started"
+export type Visibility     = "Public" | "Private"
 
 export interface GanttTask {
   label: string
@@ -19,10 +20,13 @@ export interface Project {
   id: string
   name: string
   status: ProjectStatus
+  lead: string
   pe: string
   tribe: string
   startDate: string
   endDate: string
+  boardUrl: string
+  visibility: Visibility
   progress: number          // 0–100
   tasks: GanttTask[]
   milestones: GanttMilestone[]
@@ -59,10 +63,13 @@ export const projects: Project[] = [
     id: "fach-cab",
     name: "Fach CAB & Change Mgmt Agent",
     status: "on-track",
+    lead: "a.mueller@example.com",
     pe: "AI Network Foundations",
     tribe: "AI for Networks",
-    startDate: "Jan 2026",
-    endDate: "Sep 2026",
+    startDate: "1 Jan 2026",
+    endDate: "30 Sep 2026",
+    boardUrl: "#",
+    visibility: "Private",
     progress: 28,
     tasks: [
       { label: "Establish CASM-Connection via Kafka", start: f(1),    end: f(3, 8),  status: "completed"   },
@@ -79,10 +86,13 @@ export const projects: Project[] = [
     id: "incident-perceptor",
     name: "Incident Perceptor",
     status: "paused",
+    lead: "b.schmidt@example.com",
     pe: "Service Observability",
     tribe: "AI for Networks",
-    startDate: "Jan 2026",
-    endDate: "Oct 2026",
+    startDate: "1 Jan 2026",
+    endDate: "31 Oct 2026",
+    boardUrl: "#",
+    visibility: "Public",
     progress: 45,
     tasks: [
       { label: "Establish CASM-Connection via Kafka", start: f(1),    end: f(2, 15),  status: "completed"   },
@@ -98,10 +108,13 @@ export const projects: Project[] = [
     id: "mbfd",
     name: "MBfD",
     status: "off-track",
+    lead: "c.weber@example.com",
     pe: "Use case for AN L4",
     tribe: "AI for Networks",
-    startDate: "Jan 2026",
-    endDate: "Dec 2026",
+    startDate: "1 Jan 2026",
+    endDate: "31 Dec 2026",
+    boardUrl: "#",
+    visibility: "Public",
     progress: 55,
     tasks: [
       { label: "Establish CASM-Connection via Kafka", start: f(1), end: f(8, 20),  status: "in-progress" },
@@ -116,10 +129,13 @@ export const projects: Project[] = [
     id: "mndr",
     name: "MNDR",
     status: "at-risk",
+    lead: "d.bauer@example.com",
     pe: "AI Network Foundations",
     tribe: "AI for Networks",
-    startDate: "Jan 2026",
-    endDate: "Apr 2026",
+    startDate: "1 Jan 2026",
+    endDate: "30 Apr 2026",
+    boardUrl: "#",
+    visibility: "Private",
     progress: 62,
     tasks: [
       { label: "Establish CASM-Connection via Kafka", start: f(1), end: f(3, 28), status: "in-progress" },
@@ -132,10 +148,13 @@ export const projects: Project[] = [
     id: "netinsights",
     name: "NetInsights",
     status: "at-risk",
+    lead: "e.klein@example.com",
     pe: "Service Observability",
     tribe: "AI for Networks",
-    startDate: "Jan 2026",
-    endDate: "Mar 2026",
+    startDate: "1 Jan 2026",
+    endDate: "31 Mar 2026",
+    boardUrl: "#",
+    visibility: "Public",
     progress: 80,
     tasks: [
       { label: "Establish CASM-Connection via Kafka", start: f(1), end: f(3, 25), status: "completed" },
@@ -145,11 +164,14 @@ export const projects: Project[] = [
   {
     id: "ran-guardian",
     name: "RAN Guardian CZ",
-    status: "at-risk",
+    status: "on-track",
+    lead: "f.richter@example.com",
     pe: "Use case for AN L4",
     tribe: "AI for Networks",
-    startDate: "Jan 2026",
-    endDate: "Apr 2026",
+    startDate: "1 Jan 2026",
+    endDate: "30 Apr 2026",
+    boardUrl: "#",
+    visibility: "Private",
     progress: 72,
     tasks: [
       { label: "Establish CASM-Connection via Kafka", start: f(1), end: f(4, 25), status: "completed" },
@@ -160,10 +182,13 @@ export const projects: Project[] = [
     id: "ai-ops",
     name: "AI ops",
     status: "at-risk",
+    lead: "g.wolf@example.com",
     pe: "AI Network Foundations",
     tribe: "AI for Networks",
-    startDate: "Mar 2026",
-    endDate: "Aug 2026",
+    startDate: "1 Mar 2026",
+    endDate: "31 Aug 2026",
+    boardUrl: "#",
+    visibility: "Public",
     progress: 35,
     tasks: [
       { label: "Establish CASM-Connection via Kafka", start: f(3, 20), end: f(8, 28), status: "in-progress" },
@@ -174,10 +199,13 @@ export const projects: Project[] = [
     id: "olt-swap",
     name: "OLT Swap",
     status: "at-risk",
+    lead: "h.braun@example.com",
     pe: "Service Observability",
     tribe: "AI for Networks",
-    startDate: "Jan 2026",
-    endDate: "Aug 2026",
+    startDate: "1 Jan 2026",
+    endDate: "31 Aug 2026",
+    boardUrl: "#",
+    visibility: "Public",
     progress: 60,
     tasks: [
       { label: "Establish CASM-Connection via Kafka", start: f(1), end: f(8, 28), status: "in-progress" },
