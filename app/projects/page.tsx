@@ -12,22 +12,22 @@ export default function ProjectsPage() {
   const [view, setView] = useState<View>("list")
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
 
       {/* ── Page header ───────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold tracking-tight">All Projects</h1>
-        <Button className="rounded-full px-5 gap-2 bg-primary text-primary-foreground hover:bg-primary/90">
+        <Button className="rounded-full px-5 gap-2 bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm">
           <Plus className="h-4 w-4" />
           Add New Project
         </Button>
       </div>
 
       {/* ── View tabs ─────────────────────────────────────────────────────── */}
-      <div className="flex items-center border-b">
+      <div className="flex items-center gap-1 border-b border-border">
         <button
           onClick={() => setView("list")}
-          className={`flex items-center gap-1.5 px-4 py-2.5 text-sm border-b-2 -mb-px transition-colors ${
+          className={`flex items-center gap-1.5 px-3 pb-2.5 pt-1 text-sm border-b-2 -mb-px transition-colors ${
             view === "list"
               ? "border-primary text-primary font-medium"
               : "border-transparent text-muted-foreground hover:text-foreground"
@@ -38,7 +38,7 @@ export default function ProjectsPage() {
         </button>
         <button
           onClick={() => setView("timeline")}
-          className={`flex items-center gap-1.5 px-4 py-2.5 text-sm border-b-2 -mb-px transition-colors ${
+          className={`flex items-center gap-1.5 px-3 pb-2.5 pt-1 text-sm border-b-2 -mb-px transition-colors ${
             view === "timeline"
               ? "border-primary text-primary font-medium"
               : "border-transparent text-muted-foreground hover:text-foreground"
