@@ -3,40 +3,9 @@
 import { useState, useEffect } from "react"
 import { Plus, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
-
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-type TaskStatus = "not-started" | "in-progress" | "completed"
-type MilestoneStatus = "completed" | "not-started"
-type ProjectStatus = "on-track" | "at-risk" | "paused" | "off-track"
-
-interface GanttTask {
-  label: string
-  start: number  // 0–1 fraction of year
-  end: number    // 0–1 fraction of year
-  status: TaskStatus
-}
-
-interface GanttMilestone {
-  label: string
-  position: number  // 0–1 fraction of year
-  status: MilestoneStatus
-}
-
-interface GanttProject {
-  id: string
-  name: string
-  status: ProjectStatus
-  tasks: GanttTask[]
-  milestones: GanttMilestone[]
-}
+import { projects, STATUS_DOT, STATUS_LABEL, type TaskStatus } from "@/lib/projects-data"
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
-/** month 1–12, day 1–31 → year fraction 0–1 */
-function f(month: number, day = 1): number {
-  return (month - 1 + (day - 1) / 30) / 12
-}
 
 function getCurrentYearFraction(): number {
   const now = new Date()
@@ -49,119 +18,13 @@ function getCurrentYearFraction(): number {
 
 const MONTHS   = ["January","February","March","April","May","June","July","August","September","October","November","December"]
 const QUARTERS = ["Q1","Q2","Q3","Q4"]
-const ROW_H    = 66  // px — keep left & right panels in sync
+const ROW_H    = 66
 
-const STATUS_DOT: Record<ProjectStatus, string> = {
-  "on-track":  "bg-emerald-500",
-  "at-risk":   "bg-orange-500",
-  "paused":    "bg-gray-400",
-  "off-track": "bg-red-500",
-}
-const STATUS_LABEL: Record<ProjectStatus, string> = {
-  "on-track":  "On Track",
-  "at-risk":   "At Risk",
-  "paused":    "Paused",
-  "off-track": "Off Track",
-}
 const TASK_BAR: Record<TaskStatus, string> = {
   "completed":   "bg-primary",
   "in-progress": "bg-primary",
   "not-started": "bg-gray-300",
 }
-
-// ─── Project data ─────────────────────────────────────────────────────────────
-
-const projects: GanttProject[] = [
-  {
-    id: "fach-cab",
-    name: "Fach CAB & Change Mgmt Agent",
-    status: "on-track",
-    tasks: [
-      { label: "Establish CASM-Connection via Kafka", start: f(1),    end: f(3, 8),     status: "completed"   },
-      { label: "Establish API access for ChaCo",      start: f(3, 8), end: f(7),        status: "not-started" },
-      { label: "Establish API access for ChaCo",      start: f(7, 5), end: f(9, 12),    status: "not-started" },
-    ],
-    milestones: [
-      { label: "MVP\n1", position: f(3, 8),  status: "completed"   },
-      { label: "MVP\n2", position: f(7, 5),  status: "completed"   },
-      { label: "MVP\n3", position: f(9, 8),  status: "completed"   },
-    ],
-  },
-  {
-    id: "incident-perceptor",
-    name: "Incident Perceptor",
-    status: "paused",
-    tasks: [
-      { label: "Establish CASM-Connection via Kafka", start: f(1),    end: f(2, 15),    status: "completed"   },
-      { label: "Establish CASM-Connection via Kafka", start: f(4),    end: f(6, 28),    status: "in-progress" },
-      { label: "Establish CASM-Connection via Kafka", start: f(7, 8), end: f(10, 15),   status: "not-started" },
-    ],
-    milestones: [
-      { label: "", position: f(2, 15), status: "completed"   },
-      { label: "", position: f(7, 8),  status: "not-started" },
-    ],
-  },
-  {
-    id: "mbfd",
-    name: "MBfD",
-    status: "off-track",
-    tasks: [
-      { label: "Establish CASM-Connection via Kafka", start: f(1),  end: f(8, 20),  status: "in-progress" },
-      { label: "Establish CASM-Connection via Kafka", start: f(9),  end: f(12, 31), status: "not-started" },
-    ],
-    milestones: [
-      { label: "", position: f(8, 20),  status: "completed"   },
-      { label: "", position: f(12, 25), status: "not-started" },
-    ],
-  },
-  {
-    id: "mndr",
-    name: "MNDR",
-    status: "at-risk",
-    tasks: [
-      { label: "Establish CASM-Connection via Kafka", start: f(1), end: f(3, 28), status: "in-progress" },
-    ],
-    milestones: [
-      { label: "", position: f(4, 12), status: "not-started" },
-    ],
-  },
-  {
-    id: "netinsights",
-    name: "NetInsights",
-    status: "at-risk",
-    tasks: [
-      { label: "Establish CASM-Connection via Kafka", start: f(1), end: f(3, 25), status: "completed" },
-    ],
-    milestones: [],
-  },
-  {
-    id: "ran-guardian",
-    name: "RAN Guardian CZ",
-    status: "at-risk",
-    tasks: [
-      { label: "Establish CASM-Connection via Kafka", start: f(1), end: f(4, 25), status: "completed" },
-    ],
-    milestones: [],
-  },
-  {
-    id: "ai-ops",
-    name: "AI ops",
-    status: "at-risk",
-    tasks: [
-      { label: "Establish CASM-Connection via Kafka", start: f(3, 20), end: f(8, 28), status: "in-progress" },
-    ],
-    milestones: [],
-  },
-  {
-    id: "olt-swap",
-    name: "OLT Swap",
-    status: "at-risk",
-    tasks: [
-      { label: "Establish CASM-Connection via Kafka", start: f(1), end: f(8, 28), status: "in-progress" },
-    ],
-    milestones: [],
-  },
-]
 
 // ─── Component ────────────────────────────────────────────────────────────────
 

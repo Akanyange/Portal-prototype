@@ -10,12 +10,22 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 
-const PE_OPTIONS   = ["AI Network Foundations", "Service Observability", "Use case for AN L4"]
+const PE_OPTIONS    = ["AI Network Foundations", "Service Observability", "Use case for AN L4"]
 const TRIBE_OPTIONS = ["AI for Networks"]
 
-export function ProjectFilters() {
+type View = "list" | "timeline"
+
+interface ProjectFiltersProps {
+  activeView?: View
+  onViewChange?: (view: View) => void
+}
+
+export function ProjectFilters({ activeView, onViewChange }: ProjectFiltersProps) {
   const [selectedPE,    setSelectedPE]    = useState<string>("")
   const [selectedTribe, setSelectedTribe] = useState<string>("")
+
+  const isListActive     = !activeView || activeView === "list"
+  const isTimelineActive = activeView === "timeline"
 
   return (
     <section>
@@ -25,13 +35,27 @@ export function ProjectFilters() {
         <div className="flex items-center gap-4">
           <span className="font-semibold text-base">Project</span>
           <div className="flex items-center">
-            <button className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground border-b-2 border-transparent transition-colors">
-              <LayoutList className="h-4 w-4" />
+            <button
+              onClick={() => onViewChange?.("list")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-sm border-b-2 transition-colors ${
+                isListActive
+                  ? "font-medium text-primary border-primary"
+                  : "text-muted-foreground hover:text-foreground border-transparent"
+              }`}
+            >
+              <LayoutList className={`h-4 w-4 ${isListActive ? "text-primary" : ""}`} />
               List
             </button>
-            <button className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-primary border-b-2 border-primary transition-colors">
-              <GanttChartSquare className="h-4 w-4 text-primary" />
-              Timeline
+            <button
+              onClick={() => onViewChange?.("timeline")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-sm border-b-2 transition-colors ${
+                isTimelineActive
+                  ? "font-medium text-primary border-primary"
+                  : "text-muted-foreground hover:text-foreground border-transparent"
+              }`}
+            >
+              <GanttChartSquare className={`h-4 w-4 ${isTimelineActive ? "text-primary" : ""}`} />
+              Projects Timeline
             </button>
           </div>
         </div>
