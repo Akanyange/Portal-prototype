@@ -16,6 +16,27 @@ export interface GanttMilestone {
   status: MilestoneStatus
 }
 
+export interface MilestoneSegment {
+  label: string
+  startDate: string   // "YYYY-MM-DD"
+  endDate: string
+  type: TaskStatus
+}
+
+export interface MilestoneMarker {
+  date: string
+  status: MilestoneStatus
+}
+
+export interface MilestoneRow {
+  id: string
+  name: string
+  dueDate: string
+  status: "on-track" | "at-risk"
+  segments: MilestoneSegment[]
+  markers: MilestoneMarker[]
+}
+
 export interface Project {
   id: string
   name: string
@@ -30,6 +51,13 @@ export interface Project {
   progress: number          // 0–100
   tasks: GanttTask[]
   milestones: GanttMilestone[]
+  // Detail page fields
+  tags?: string[]
+  createdDate?: string
+  projectLead?: string
+  links?: string[]
+  description?: string
+  milestoneRows?: MilestoneRow[]
 }
 
 /** month 1–12, day 1–31 → 0–1 year fraction */
@@ -171,12 +199,107 @@ export const projects: Project[] = [
     startDate: "1 Jan 2026",
     endDate: "30 Apr 2026",
     boardUrl: "#",
-    visibility: "Private",
+    visibility: "Public",
     progress: 72,
     tasks: [
       { label: "Establish CASM-Connection via Kafka", start: f(1), end: f(4, 25), status: "completed" },
     ],
     milestones: [],
+    // Detail page data
+    tags: ["AI for Networks", "AI Network Foundation"],
+    createdDate: "1 Mar 2024",
+    projectLead: "Alycia Smith",
+    links: ["https://www.atlassian.com/software/confluence"],
+    description:
+      "This project aims to design and implement a scalable digital solution that addresses a clearly identified user and business need. It begins with research and requirement gathering to understand target users, stakeholder expectations, and technical constraints. Insights from this phase inform concept development, information architecture, and experience design. The project follows an iterative approach, including prototyping, validation, development, and continuous feedback loops to ensure usability, performance, and alignment with defined success metrics.",
+    milestoneRows: [
+      {
+        id: "ms1",
+        name: "Milestone 2",
+        dueDate: "18th Feb",
+        status: "on-track",
+        segments: [
+          { label: "Establish CASM-Connection via Kafka", startDate: "2026-01-07", endDate: "2026-01-30", type: "completed" },
+        ],
+        markers: [{ date: "2026-01-30", status: "completed" }],
+      },
+      {
+        id: "ms2",
+        name: "Milestone 2",
+        dueDate: "18th Feb",
+        status: "on-track",
+        segments: [
+          { label: "Establish CASM-Connection via Kafka", startDate: "2026-01-21", endDate: "2026-02-18", type: "in-progress" },
+          { label: "Establish CASM-Connection via Kafka", startDate: "2026-02-25", endDate: "2026-04-08", type: "not-started" },
+        ],
+        markers: [
+          { date: "2026-02-18", status: "completed" },
+          { date: "2026-04-08", status: "not-started" },
+        ],
+      },
+      {
+        id: "ms3",
+        name: "Milestone 3",
+        dueDate: "18th Feb",
+        status: "at-risk",
+        segments: [
+          { label: "Establish CASM-Connection via Kafka", startDate: "2026-01-07", endDate: "2026-03-18", type: "in-progress" },
+        ],
+        markers: [{ date: "2026-03-18", status: "completed" }],
+      },
+      {
+        id: "ms4",
+        name: "Milestone 4",
+        dueDate: "18th Feb",
+        status: "on-track",
+        segments: [
+          { label: "Establish CASM-Connection via Kafka", startDate: "2026-02-25", endDate: "2026-03-25", type: "not-started" },
+        ],
+        markers: [{ date: "2026-03-25", status: "not-started" }],
+      },
+      {
+        id: "ms5",
+        name: "Milestone 5",
+        dueDate: "18th Feb",
+        status: "on-track",
+        segments: [
+          { label: "Establish CASM-Connection via Kafka", startDate: "2026-03-18", endDate: "2026-04-08", type: "in-progress" },
+        ],
+        markers: [{ date: "2026-04-08", status: "completed" }],
+      },
+      {
+        id: "ms6",
+        name: "Milestone 6",
+        dueDate: "18th Feb",
+        status: "on-track",
+        segments: [
+          { label: "Establish CASM-Connection via Kafka", startDate: "2026-04-01", endDate: "2026-04-25", type: "in-progress" },
+        ],
+        markers: [],
+      },
+      {
+        id: "ms7",
+        name: "Milestone 7",
+        dueDate: "18th Feb",
+        status: "on-track",
+        segments: [
+          { label: "Establish CASM-Connection via Kafka", startDate: "2026-02-25", endDate: "2026-03-25", type: "in-progress" },
+          { label: "Establish CASM-Connection via Kafka", startDate: "2026-04-01", endDate: "2026-04-15", type: "not-started" },
+        ],
+        markers: [{ date: "2026-04-01", status: "not-started" }],
+      },
+      {
+        id: "ms8",
+        name: "Milestone 8",
+        dueDate: "18th Feb",
+        status: "on-track",
+        segments: [
+          { label: "Establish CASM-Connection via Kafka", startDate: "2026-03-18", endDate: "2026-04-08", type: "in-progress" },
+          { label: "Establish CASM-Connection via Kafka", startDate: "2026-04-08", endDate: "2026-04-22", type: "not-started" },
+        ],
+        markers: [],
+      },
+    ],
   },
   {
     id: "ai-ops",

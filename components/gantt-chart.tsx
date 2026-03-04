@@ -1,6 +1,8 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
+import Link from "next/link"
 import { Plus, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { projects, STATUS_DOT, STATUS_LABEL, type TaskStatus } from "@/lib/projects-data"
@@ -29,6 +31,7 @@ const TASK_BAR: Record<TaskStatus, string> = {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function GanttChart() {
+  const router = useRouter()
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const [todayFraction, setTodayFraction] = useState<number | null>(null)
 
@@ -53,9 +56,11 @@ export function GanttChart() {
           <div className="h-[72px] flex items-center justify-between px-4 border-b bg-card">
             <span className="font-semibold text-sm">Projects</span>
             <div className="relative group">
-              <Button size="icon" variant="outline" className="h-7 w-7 rounded-full border-muted-foreground/30">
-                <Plus className="h-3.5 w-3.5" />
-              </Button>
+              <Link href="/projects/new">
+                <Button size="icon" variant="outline" className="h-7 w-7 rounded-full border-muted-foreground/30">
+                  <Plus className="h-3.5 w-3.5" />
+                </Button>
+              </Link>
               {/* Tooltip */}
               <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 bg-foreground text-background text-xs px-2 py-1 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 shadow-sm">
                 Add New Project
@@ -69,7 +74,7 @@ export function GanttChart() {
               key={project.id}
               className="border-b cursor-pointer hover:bg-muted/40 transition-colors"
               style={{ height: ROW_H }}
-              onClick={() => toggle(project.id)}
+              onClick={() => router.push(`/projects/${project.id}`)}
             >
               <div className="flex items-center gap-2 px-3 h-full">
                 <ChevronRight

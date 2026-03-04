@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import Link from "next/link"
 import { Plus, LayoutList, GanttChartSquare } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ProjectsTable } from "@/components/projects-table"
@@ -17,10 +18,12 @@ export default function ProjectsPage() {
       {/* ── Page header ───────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold tracking-tight">All Projects</h1>
-        <Button className="rounded-full px-5 gap-2 bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm">
-          <Plus className="h-4 w-4" />
-          Add New Project
-        </Button>
+        <Link href="/projects/new">
+          <Button className="rounded-full px-5 gap-2 bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm">
+            <Plus className="h-4 w-4" />
+            Add New Project
+          </Button>
+        </Link>
       </div>
 
       {/* ── View tabs ─────────────────────────────────────────────────────── */}

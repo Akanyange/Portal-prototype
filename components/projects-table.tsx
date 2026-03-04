@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import Link from "next/link"
 import {
   Table,
   TableBody,
@@ -138,9 +139,12 @@ export function ProjectsTable() {
 
                 {/* Project Name */}
                 <td className="px-3 py-3">
-                  <span className="font-medium underline underline-offset-2 cursor-pointer hover:text-primary transition-colors whitespace-nowrap">
+                  <Link
+                    href={`/projects/${project.id}`}
+                    className="font-medium underline underline-offset-2 hover:text-primary transition-colors whitespace-nowrap"
+                  >
                     {project.name}
-                  </span>
+                  </Link>
                 </td>
 
                 {/* Lead */}
