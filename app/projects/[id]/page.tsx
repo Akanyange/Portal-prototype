@@ -18,7 +18,7 @@ import { MilestoneGantt, type GanttTimeView } from "@/components/milestone-gantt
 
 export default function ProjectDetailPage() {
   const { id } = useParams<{ id: string }>()
-  const [timeView, setTimeView] = useState<GanttTimeView>("Weeks")
+  const [timeView, setTimeView] = useState<GanttTimeView>("Months")
 
   const project = projects.find(p => p.id === id)
 
@@ -75,10 +75,13 @@ export default function ProjectDetailPage() {
             </div>
           )}
         </div>
-        <button className="shrink-0 flex items-center gap-2 bg-foreground text-background px-4 py-2 rounded-full text-sm font-medium hover:bg-foreground/90 transition-colors">
+        <Link
+          href={`/projects/${project.id}/edit`}
+          className="shrink-0 flex items-center gap-2 bg-foreground text-background px-4 py-2 rounded-full text-sm font-medium hover:bg-foreground/90 transition-colors"
+        >
           <Pencil className="h-3.5 w-3.5" />
           Edit Project
-        </button>
+        </Link>
       </div>
 
       {/* ── Meta row ────────────────────────────────────────────────────────── */}
@@ -160,7 +163,7 @@ export default function ProjectDetailPage() {
             <div className="flex items-center gap-3">
               <span className="font-semibold text-sm">{project.name} Timeline</span>
               <div className="flex items-center gap-0.5 bg-muted rounded-full p-0.5">
-                {(["Weeks", "Months", "Quarters"] as GanttTimeView[]).map(v => (
+                {(["Months", "Quarters"] as GanttTimeView[]).map(v => (
                   <button
                     key={v}
                     onClick={() => setTimeView(v)}

@@ -243,16 +243,16 @@ export function MilestoneGantt({ projectName, projectStatus, milestoneRows, time
         </div>
         <div className="flex items-center gap-1.5">
           <div className="h-3 w-3 rotate-45 bg-card border-2 border-gray-400 shrink-0" />
-          <span>Milestone not started</span>
+          <span>Milestone pending</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <div className="h-2 w-10 rounded-full bg-gray-300" />
-          <span>not started</span>
+          <div className="h-2 w-10 rounded-full bg-gray-500" />
+          <span>Planned</span>
         </div>
         <div className="flex items-center gap-1.5">
           <div className="h-2 w-8 rounded-l-full bg-primary inline-block" />
-          <div className="h-2 w-3 rounded-r-full bg-gray-300 -ml-px inline-block" />
-          <span>In Progress</span>
+          <div className="h-2 w-3 rounded-r-full bg-gray-500 -ml-px inline-block" />
+          <span>Ongoing</span>
         </div>
         <div className="flex items-center gap-1.5">
           <div className="h-2 w-10 rounded-full bg-primary" />

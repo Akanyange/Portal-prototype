@@ -1,4 +1,4 @@
-export type ProjectStatus  = "on-track" | "at-risk" | "paused" | "off-track"
+export type ProjectStatus  = "planned" | "ongoing" | "completed"
 export type TaskStatus     = "not-started" | "in-progress" | "completed"
 export type MilestoneStatus = "completed" | "not-started"
 export type Visibility     = "Public" | "Private"
@@ -66,31 +66,28 @@ export function f(month: number, day = 1): number {
 }
 
 export const STATUS_DOT: Record<ProjectStatus, string> = {
-  "on-track":  "bg-emerald-500",
-  "at-risk":   "bg-orange-500",
-  "paused":    "bg-gray-400",
-  "off-track": "bg-red-500",
+  "planned":   "bg-blue-500",
+  "ongoing":   "bg-amber-500",
+  "completed": "bg-emerald-500",
 }
 
 export const STATUS_LABEL: Record<ProjectStatus, string> = {
-  "on-track":  "On Track",
-  "at-risk":   "At Risk",
-  "paused":    "Paused",
-  "off-track": "Off Track",
+  "planned":   "Planned",
+  "ongoing":   "Ongoing",
+  "completed": "Completed",
 }
 
 export const STATUS_BADGE: Record<ProjectStatus, string> = {
-  "on-track":  "bg-emerald-100 text-emerald-700",
-  "at-risk":   "bg-orange-100 text-orange-700",
-  "paused":    "bg-gray-100 text-gray-600",
-  "off-track": "bg-red-100 text-red-700",
+  "planned":   "bg-blue-500/15 text-blue-300",
+  "ongoing":   "bg-amber-500/15 text-amber-300",
+  "completed": "bg-emerald-500/15 text-emerald-300",
 }
 
 export const projects: Project[] = [
   {
     id: "fach-cab",
     name: "Fach CAB & Change Mgmt Agent",
-    status: "on-track",
+    status: "ongoing",
     lead: "a.mueller@example.com",
     pe: "AI Network Foundations",
     tribe: "AI for Networks",
@@ -113,7 +110,7 @@ export const projects: Project[] = [
   {
     id: "incident-perceptor",
     name: "Incident Perceptor",
-    status: "paused",
+    status: "planned",
     lead: "b.schmidt@example.com",
     pe: "Service Observability",
     tribe: "AI for Networks",
@@ -135,7 +132,7 @@ export const projects: Project[] = [
   {
     id: "mbfd",
     name: "MBfD",
-    status: "off-track",
+    status: "ongoing",
     lead: "c.weber@example.com",
     pe: "Use case for AN L4",
     tribe: "AI for Networks",
@@ -156,7 +153,7 @@ export const projects: Project[] = [
   {
     id: "mndr",
     name: "MNDR",
-    status: "at-risk",
+    status: "completed",
     lead: "d.bauer@example.com",
     pe: "AI Network Foundations",
     tribe: "AI for Networks",
@@ -175,7 +172,7 @@ export const projects: Project[] = [
   {
     id: "netinsights",
     name: "NetInsights",
-    status: "at-risk",
+    status: "completed",
     lead: "e.klein@example.com",
     pe: "Service Observability",
     tribe: "AI for Networks",
@@ -192,7 +189,7 @@ export const projects: Project[] = [
   {
     id: "ran-guardian",
     name: "RAN Guardian CZ",
-    status: "on-track",
+    status: "ongoing",
     lead: "f.richter@example.com",
     pe: "Use case for AN L4",
     tribe: "AI for Networks",
@@ -304,7 +301,7 @@ export const projects: Project[] = [
   {
     id: "ai-ops",
     name: "AI ops",
-    status: "at-risk",
+    status: "planned",
     lead: "g.wolf@example.com",
     pe: "AI Network Foundations",
     tribe: "AI for Networks",
@@ -321,7 +318,7 @@ export const projects: Project[] = [
   {
     id: "olt-swap",
     name: "OLT Swap",
-    status: "at-risk",
+    status: "ongoing",
     lead: "h.braun@example.com",
     pe: "Service Observability",
     tribe: "AI for Networks",
