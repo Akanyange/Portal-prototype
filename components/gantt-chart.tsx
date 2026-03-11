@@ -3,9 +3,10 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { Plus, ChevronRight } from "lucide-react"
+import { Plus, ChevronRight, CalendarDays, User, ExternalLink } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { projects, STATUS_DOT, STATUS_LABEL, type TaskStatus } from "@/lib/projects-data"
+import { useRole } from "@/lib/role-context"
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -22,6 +23,8 @@ const MONTHS   = ["January","February","March","April","May","June","July","Augu
 const QUARTERS = ["Q1","Q2","Q3","Q4"]
 const ROW_H    = 66
 
+const ACCORDION_H = 88
+
 const TASK_BAR: Record<TaskStatus, string> = {
   "completed":   "bg-primary",
   "in-progress": "bg-primary",
@@ -32,8 +35,13 @@ const TASK_BAR: Record<TaskStatus, string> = {
 
 export function GanttChart() {
   const router = useRouter()
+  const { role } = useRole()
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const [todayFraction, setTodayFraction] = useState<number | null>(null)
+
+  const visibleProjects = role === "General User"
+    ? projects.filter(p => p.visibility === "Public")
+    : projects
 
   useEffect(() => {
     setTodayFraction(getCurrentYearFraction())
@@ -69,33 +77,63 @@ export function GanttChart() {
           </div>
 
           {/* Project rows */}
-          {projects.map(project => (
-            <div
-              key={project.id}
-              className="border-b cursor-pointer hover:bg-muted/40 transition-colors"
-              style={{ height: ROW_H }}
-              onClick={() => router.push(`/projects/${project.id}`)}
-            >
-              <div className="flex items-center gap-2 px-3 h-full">
-                <ChevronRight
-                  className={`h-3.5 w-3.5 text-muted-foreground shrink-0 transition-transform duration-150 ${
-                    expanded.has(project.id) ? "rotate-90" : ""
-                  }`}
-                />
-                {/* T-logo */}
-                <div className="h-7 w-7 shrink-0 rounded-sm bg-primary flex items-center justify-center text-primary-foreground font-bold text-xs">
-                  T
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium truncate leading-tight">{project.name}</p>
-                  <div className="flex items-center gap-1 mt-0.5">
-                    <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${STATUS_DOT[project.status]}`} />
-                    <span className="text-xs text-muted-foreground">{STATUS_LABEL[project.status]}</span>
+          {visibleProjects.map(project => {
+            const isOpen  = expanded.has(project.id)
+            const totalH  = isOpen ? ROW_H + ACCORDION_H : ROW_H
+            return (
+              <div key={project.id} className="border-b overflow-hidden" style={{ height: totalH }}>
+                {/* Main row */}
+                <div
+                  className="flex items-center gap-2 px-3 cursor-pointer hover:bg-muted/40 transition-colors"
+                  style={{ height: ROW_H }}
+                  onClick={() => router.push(`/projects/${project.id}`)}
+                >
+                  <ChevronRight
+                    className={`h-3.5 w-3.5 text-muted-foreground shrink-0 transition-transform duration-150 ${isOpen ? "rotate-90" : ""}`}
+                    onClick={e => { e.stopPropagation(); toggle(project.id) }}
+                  />
+                  {/* T-logo */}
+                  <div className="h-7 w-7 shrink-0 rounded-sm bg-primary flex items-center justify-center text-primary-foreground font-bold text-xs">
+                    T
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium truncate leading-tight">{project.name}</p>
+                    <div className="flex items-center gap-1 mt-0.5">
+                      <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${STATUS_DOT[project.status]}`} />
+                      <span className="text-xs text-muted-foreground">{STATUS_LABEL[project.status]}</span>
+                    </div>
                   </div>
                 </div>
+
+                {/* Accordion details */}
+                {isOpen && (
+                  <div className="px-4 pb-3 space-y-1.5 bg-muted/30 border-t border-border" style={{ height: ACCORDION_H }}>
+                    <div className="flex items-center gap-1.5 pt-2">
+                      <User className="h-3 w-3 text-muted-foreground shrink-0" />
+                      <span className="text-[11px] text-muted-foreground">Lead:</span>
+                      <span className="text-[11px] font-medium truncate">{project.lead}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <CalendarDays className="h-3 w-3 text-muted-foreground shrink-0" />
+                      <span className="text-[11px] text-muted-foreground">Deadline:</span>
+                      <span className="text-[11px] font-medium">{project.endDate}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <ExternalLink className="h-3 w-3 text-muted-foreground shrink-0" />
+                      <span className="text-[11px] text-muted-foreground">Jira:</span>
+                      <a
+                        href={project.boardUrl}
+                        onClick={e => e.stopPropagation()}
+                        className="text-[11px] text-primary underline underline-offset-2 hover:opacity-80 transition-opacity"
+                      >
+                        Open board
+                      </a>
+                    </div>
+                  </div>
+                )}
               </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
 
         {/* ── Right: scrollable timeline ────────────────────────────────────── */}
@@ -139,11 +177,14 @@ export function GanttChart() {
                 />
               )}
 
-              {projects.map(project => (
+              {visibleProjects.map(project => {
+                const isOpen = expanded.has(project.id)
+                const totalH = isOpen ? ROW_H + ACCORDION_H : ROW_H
+                return (
                 <div
                   key={project.id}
                   className="relative border-b bg-card"
-                  style={{ height: ROW_H }}
+                  style={{ height: totalH }}
                 >
                   {/* ── Task bars: label above + thin bar ─────────────────── */}
                   {project.tasks.map((task, i) => {
@@ -202,7 +243,7 @@ export function GanttChart() {
                     </div>
                   ))}
                 </div>
-              ))}
+              )})}
             </div>
           </div>
         </div>

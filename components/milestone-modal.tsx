@@ -50,7 +50,7 @@ export function MilestoneModal({ initial, onSave, onClose }: Props) {
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
       onClick={e => { if (e.target === e.currentTarget) onClose() }}
     >
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-[560px] mx-4">
+      <div className="bg-card rounded-2xl shadow-2xl w-full max-w-140 mx-4">
 
         {/* Header */}
         <div className="flex items-center justify-between px-6 pt-6 pb-4">

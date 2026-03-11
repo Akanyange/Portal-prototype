@@ -2,6 +2,8 @@
 
 import { useState } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
+import { useRole } from "@/lib/role-context"
 import {
   Table,
   TableBody,
@@ -13,11 +15,22 @@ import {
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuItem,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog"
+import { Button } from "@/components/ui/button"
 import { projects, STATUS_BADGE, STATUS_LABEL } from "@/lib/projects-data"
+import { toast } from "@/lib/toast"
 import {
   ArrowUpDown,
   ChevronDown,
@@ -25,21 +38,35 @@ import {
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
+  Edit,
+  Archive,
   MoreHorizontal,
   Search,
+  Trash2,
 } from "lucide-react"
 
 const PER_PAGE_OPTIONS = [10, 20, 50]
 
 export function ProjectsTable() {
+  const router = useRouter()
+  const { role } = useRole()
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(10)
   const [selectAll, setSelectAll] = useState(false)
   const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [confirmAction, setConfirmAction] = useState<{
+    type: "delete" | "archive"
+    projectId: string
+    projectName: string
+  } | null>(null)
 
-  const totalPages = Math.max(1, Math.ceil(projects.length / itemsPerPage))
+  const visibleProjects = role === "General User"
+    ? projects.filter(p => p.visibility === "Public")
+    : projects
+
+  const totalPages = Math.max(1, Math.ceil(visibleProjects.length / itemsPerPage))
   const start      = (currentPage - 1) * itemsPerPage
-  const paginated  = projects.slice(start, start + itemsPerPage)
+  const paginated  = visibleProjects.slice(start, start + itemsPerPage)
 
   function toggleRow(id: string) {
     setSelected(prev => {
@@ -89,7 +116,7 @@ export function ProjectsTable() {
           </button>
 
           {/* Search */}
-          <div className="flex items-center gap-2 border rounded-full px-3 py-1.5 bg-background min-w-[200px]">
+          <div className="flex items-center gap-2 border rounded-full px-3 py-1.5 bg-background min-w-50">
             <input
               placeholder="Search"
               className="flex-1 text-sm outline-none bg-transparent placeholder:text-muted-foreground"
@@ -184,9 +211,32 @@ export function ProjectsTable() {
 
                 {/* Actions */}
                 <td className="px-3 py-3">
-                  <button className="p-1 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground">
-                    <MoreHorizontal className="h-4 w-4" />
-                  </button>
+                  {role === "General User" ? null : (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button className="p-1 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-44">
+                        <DropdownMenuItem onClick={() => router.push(`/projects/${project.id}/edit`)}>
+                          <Edit className="h-3.5 w-3.5 mr-2" /> Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => setConfirmAction({ type: "archive", projectId: project.id, projectName: project.name })}>
+                          <Archive className="h-3.5 w-3.5 mr-2" /> Archive
+                        </DropdownMenuItem>
+                        {role === "Admin" && (
+                          <DropdownMenuItem
+                            className="text-destructive focus:text-destructive"
+                            onClick={() => setConfirmAction({ type: "delete", projectId: project.id, projectName: project.name })}
+                          >
+                            <Trash2 className="h-3.5 w-3.5 mr-2" /> Delete
+                          </DropdownMenuItem>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
                 </td>
               </tr>
             ))}
@@ -205,7 +255,7 @@ export function ProjectsTable() {
               <ChevronDown className="h-3.5 w-3.5" />
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" side="top" className="min-w-[120px]">
+          <DropdownMenuContent align="start" side="top" className="min-w-30">
             <DropdownMenuRadioGroup value={String(itemsPerPage)} onValueChange={handlePerPage}>
               {PER_PAGE_OPTIONS.map(n => (
                 <DropdownMenuRadioItem key={n} value={String(n)}>
@@ -253,6 +303,38 @@ export function ProjectsTable() {
           </button>
         </div>
       </div>
+
+      {/* ── Confirm modal ─────────────────────────────────────────────────── */}
+      {confirmAction && (
+        <Dialog open onOpenChange={() => setConfirmAction(null)}>
+          <DialogContent className="max-w-sm">
+            <DialogHeader>
+              <DialogTitle>{confirmAction.type === "delete" ? "Delete Project" : "Archive Project"}</DialogTitle>
+            </DialogHeader>
+            <p className="text-sm text-muted-foreground py-2">
+              Are you sure you want to {confirmAction.type} <span className="text-foreground font-medium">&ldquo;{confirmAction.projectName}&rdquo;</span>?
+              {confirmAction.type === "delete" && " This action cannot be undone."}
+            </p>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setConfirmAction(null)}>Cancel</Button>
+              <Button
+                variant={confirmAction.type === "delete" ? "destructive" : "default"}
+                onClick={() => {
+                  const action = confirmAction
+                  setConfirmAction(null)
+                  if (action.type === "delete") {
+                    toast("Project deleted", `"${action.projectName}" has been removed.`, "error")
+                  } else {
+                    toast("Project archived", `"${action.projectName}" has been archived.`)
+                  }
+                }}
+              >
+                {confirmAction.type === "delete" ? "Delete" : "Archive"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   )
 }
