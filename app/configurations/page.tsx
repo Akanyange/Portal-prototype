@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Pencil, Trash2, Plus } from "lucide-react"
+import { Pencil, Trash2, Plus, Search, ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react"
 import { toast } from "@/lib/toast"
 import { Button } from "@/components/ui/button"
 import {
@@ -53,6 +53,15 @@ function nextId(items: { id: string }[]): string {
   return String(Math.max(0, ...items.map(i => Number(i.id))) + 1)
 }
 
+// ── Sort icon helper ──────────────────────────────────────────────────────────
+
+type SortDir = "asc" | "desc"
+
+function SortIcon({ field, sortField, sortDir }: { field: string; sortField: string; sortDir: SortDir }) {
+  if (sortField !== field) return <ChevronsUpDown className="h-3 w-3 opacity-40" />
+  return sortDir === "asc" ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />
+}
+
 // ── Shared table shell ────────────────────────────────────────────────────────
 
 function TableShell({ children }: { children: React.ReactNode }) {
@@ -86,6 +95,18 @@ function TribesTab() {
   const [editing, setEditing] = useState<Tribe | null>(null)
   const [title, setTitle]     = useState("")
   const [delId, setDelId]     = useState<string | null>(null)
+  const [search, setSearch]   = useState("")
+  const [sortField, setSortField] = useState<"title" | "dateModified">("title")
+  const [sortDir, setSortDir]     = useState<SortDir>("asc")
+
+  function toggleSort(field: "title" | "dateModified") {
+    if (sortField === field) setSortDir(d => d === "asc" ? "desc" : "asc")
+    else { setSortField(field); setSortDir("asc") }
+  }
+
+  const displayed = [...tribes]
+    .filter(t => t.title.toLowerCase().includes(search.toLowerCase()))
+    .sort((a, b) => a[sortField].localeCompare(b[sortField]) * (sortDir === "asc" ? 1 : -1))
 
   function openCreate() {
     setEditing(null)
@@ -132,24 +153,44 @@ function TribesTab() {
           <span className="text-sm font-medium">Tribes</span>
           <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full">{tribes.length}</span>
         </div>
-        <Button onClick={openCreate} className="rounded-full gap-1.5 px-5 bg-primary text-primary-foreground hover:bg-primary/90">
-          <Plus className="h-3.5 w-3.5" />
-          Create New
-        </Button>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 border rounded-full px-3 py-1.5 bg-background min-w-44">
+            <input
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Search"
+              className="flex-1 text-sm outline-none bg-transparent placeholder:text-muted-foreground"
+            />
+            <Search className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+          </div>
+          <Button onClick={openCreate} className="rounded-full gap-1.5 px-5 bg-primary text-primary-foreground hover:bg-primary/90">
+            <Plus className="h-3.5 w-3.5" />
+            Create New
+          </Button>
+        </div>
       </div>
 
       {/* Table */}
       <TableShell>
-        <TableHeaderRow cols={["Title", "Date Modified", "Actions"]} />
-        {tribes.length === 0 && (
+        {/* Sortable header */}
+        <div className="flex items-center px-5 py-3 bg-muted/40 border-b border-border text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+          <button className="flex-1 flex items-center gap-1 hover:text-foreground transition-colors" onClick={() => toggleSort("title")}>
+            Title <SortIcon field="title" sortField={sortField} sortDir={sortDir} />
+          </button>
+          <button className="w-44 flex items-center gap-1 hover:text-foreground transition-colors" onClick={() => toggleSort("dateModified")}>
+            Date Modified <SortIcon field="dateModified" sortField={sortField} sortDir={sortDir} />
+          </button>
+          <span className="w-28 text-right">Actions</span>
+        </div>
+        {displayed.length === 0 && (
           <div className="px-5 py-10 text-center text-sm text-muted-foreground">
-            No tribes yet. Click <span className="text-primary font-medium">Create New</span> to add one.
+            {search ? "No tribes match your search." : <>No tribes yet. Click <span className="text-primary font-medium">Create New</span> to add one.</>}
           </div>
         )}
-        {tribes.map((t, idx) => (
+        {displayed.map((t, idx) => (
           <div
             key={t.id}
-            className={`flex items-center px-5 py-3.5 hover:bg-muted/20 transition-colors ${idx < tribes.length - 1 ? "border-b border-border" : ""}`}
+            className={`flex items-center px-5 py-3.5 hover:bg-muted/20 transition-colors ${idx < displayed.length - 1 ? "border-b border-border" : ""}`}
           >
             <span className="flex-1 text-sm">{t.title}</span>
             <span className="w-44 text-sm text-muted-foreground">{t.dateModified}</span>
@@ -234,6 +275,18 @@ function PortfoliosTab() {
   const [editing, setEditing]       = useState<Portfolio | null>(null)
   const [title, setTitle]           = useState("")
   const [delId, setDelId]           = useState<string | null>(null)
+  const [search, setSearch]         = useState("")
+  const [sortField, setSortField]   = useState<"title" | "dateModified">("title")
+  const [sortDir, setSortDir]       = useState<SortDir>("asc")
+
+  function toggleSort(field: "title" | "dateModified") {
+    if (sortField === field) setSortDir(d => d === "asc" ? "desc" : "asc")
+    else { setSortField(field); setSortDir("asc") }
+  }
+
+  const displayed = [...portfolios]
+    .filter(p => p.title.toLowerCase().includes(search.toLowerCase()))
+    .sort((a, b) => a[sortField].localeCompare(b[sortField]) * (sortDir === "asc" ? 1 : -1))
 
   function openCreate() {
     setEditing(null)
@@ -278,24 +331,44 @@ function PortfoliosTab() {
           <span className="text-sm font-medium">Portfolio Elements</span>
           <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full">{portfolios.length}</span>
         </div>
-        <Button onClick={openCreate} className="rounded-full gap-1.5 px-5 bg-primary text-primary-foreground hover:bg-primary/90">
-          <Plus className="h-3.5 w-3.5" />
-          Create New
-        </Button>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 border rounded-full px-3 py-1.5 bg-background min-w-44">
+            <input
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Search"
+              className="flex-1 text-sm outline-none bg-transparent placeholder:text-muted-foreground"
+            />
+            <Search className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+          </div>
+          <Button onClick={openCreate} className="rounded-full gap-1.5 px-5 bg-primary text-primary-foreground hover:bg-primary/90">
+            <Plus className="h-3.5 w-3.5" />
+            Create New
+          </Button>
+        </div>
       </div>
 
       {/* Table */}
       <TableShell>
-        <TableHeaderRow cols={["Title", "Date Modified", "Actions"]} />
-        {portfolios.length === 0 && (
+        {/* Sortable header */}
+        <div className="flex items-center px-5 py-3 bg-muted/40 border-b border-border text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+          <button className="flex-1 flex items-center gap-1 hover:text-foreground transition-colors" onClick={() => toggleSort("title")}>
+            Title <SortIcon field="title" sortField={sortField} sortDir={sortDir} />
+          </button>
+          <button className="w-44 flex items-center gap-1 hover:text-foreground transition-colors" onClick={() => toggleSort("dateModified")}>
+            Date Modified <SortIcon field="dateModified" sortField={sortField} sortDir={sortDir} />
+          </button>
+          <span className="w-28 text-right">Actions</span>
+        </div>
+        {displayed.length === 0 && (
           <div className="px-5 py-10 text-center text-sm text-muted-foreground">
-            No portfolio elements yet.
+            {search ? "No portfolio elements match your search." : "No portfolio elements yet."}
           </div>
         )}
-        {portfolios.map((p, idx) => (
+        {displayed.map((p, idx) => (
           <div
             key={p.id}
-            className={`flex items-center px-5 py-3.5 hover:bg-muted/20 transition-colors ${idx < portfolios.length - 1 ? "border-b border-border" : ""}`}
+            className={`flex items-center px-5 py-3.5 hover:bg-muted/20 transition-colors ${idx < displayed.length - 1 ? "border-b border-border" : ""}`}
           >
             <span className="flex-1 text-sm">{p.title}</span>
             <span className="w-44 text-sm text-muted-foreground">{p.dateModified}</span>

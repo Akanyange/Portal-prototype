@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Check, ChevronDown, MoreHorizontal, Pencil, Plus, Search, Trash2, UserPlus, X } from "lucide-react"
+import { Check, ChevronDown, MoreHorizontal, Pencil, Plus, Search, Trash2, UserPlus, X, ChevronsUpDown, ChevronUp } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
@@ -141,6 +141,8 @@ function RequestsTab() {
   const [editRequest,  setEditRequest]  = useState<AccessRequest | null>(null)
   const [editEmail,    setEditEmail]    = useState("")
   const [editRole,     setEditRole]     = useState<UserRole>("General User")
+  const [filterStatus, setFilterStatus] = useState<RequestStatus | "">("")
+  const [filterRole,   setFilterRole]   = useState<UserRole | "">("")
 
   function openEdit(r: AccessRequest) {
     setEditRequest(r)
@@ -157,10 +159,12 @@ function RequestsTab() {
     setEditRequest(null)
   }
 
-  const filtered = requests.filter(r =>
-    r.email.toLowerCase().includes(search.toLowerCase()) ||
-    r.role.toLowerCase().includes(search.toLowerCase())
-  )
+  const filtered = requests.filter(r => {
+    if (search && !r.email.toLowerCase().includes(search.toLowerCase()) && !r.role.toLowerCase().includes(search.toLowerCase())) return false
+    if (filterStatus && r.status !== filterStatus) return false
+    if (filterRole   && r.role   !== filterRole)   return false
+    return true
+  })
 
   function approveRequest(r: AccessRequest) {
     setRequests(prev => prev.filter(x => x.id !== r.id))
@@ -194,9 +198,38 @@ function RequestsTab() {
             />
             <Search className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
           </div>
-          <button className="flex items-center gap-1.5 border rounded-full px-4 py-1.5 text-sm bg-background hover:bg-muted/50 transition-colors">
-            Filter <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
-          </button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className={`flex items-center gap-1.5 border rounded-full px-4 py-1.5 text-sm bg-background hover:bg-muted/50 transition-colors ${(filterStatus || filterRole) ? "border-primary text-primary" : ""}`}>
+                Filter <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-52 p-2 space-y-3">
+              <div>
+                <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide px-1 mb-1">Status</p>
+                {(["", "pending", "invite-sent"] as const).map(s => (
+                  <DropdownMenuItem key={s} onClick={() => setFilterStatus(s)} className="flex items-center gap-2">
+                    <div className={`h-3 w-3 rounded-full border-2 flex items-center justify-center shrink-0 ${filterStatus === s ? "border-primary bg-primary" : "border-border"}`}>
+                      {filterStatus === s && <div className="h-1 w-1 rounded-full bg-white" />}
+                    </div>
+                    {s === "" ? "All" : s === "pending" ? "Pending Request" : "Invite Sent"}
+                  </DropdownMenuItem>
+                ))}
+              </div>
+              <DropdownMenuSeparator />
+              <div>
+                <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide px-1 mb-1">Role</p>
+                {(["", ...ROLE_OPTIONS] as const).map(r => (
+                  <DropdownMenuItem key={r} onClick={() => setFilterRole(r as UserRole | "")} className="flex items-center gap-2">
+                    <div className={`h-3 w-3 rounded-full border-2 flex items-center justify-center shrink-0 ${filterRole === r ? "border-primary bg-primary" : "border-border"}`}>
+                      {filterRole === r && <div className="h-1 w-1 rounded-full bg-white" />}
+                    </div>
+                    {r === "" ? "All" : r}
+                  </DropdownMenuItem>
+                ))}
+              </div>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
@@ -331,20 +364,39 @@ function RequestsTab() {
 // ── Roles tab ─────────────────────────────────────────────────────────────────
 
 function RolesTab({ onCreateRole }: { onCreateRole: () => void }) {
-  const [roles,   setRoles]   = useState<Role[]>(SEED_ROLES)
-  const [search,  setSearch]  = useState("")
-  const [delId,   setDelId]   = useState<string | null>(null)
+  const [roles,       setRoles]       = useState<Role[]>(SEED_ROLES)
+  const [search,      setSearch]      = useState("")
   const [membersRole, setMembersRole] = useState<Role | null>(null)
+  const [filterAccess, setFilterAccess] = useState<AccessType | "">("")
+  const [editingRole,  setEditingRole]  = useState<Role | null>(null)
+  const [editName,     setEditName]     = useState("")
+  const [editPerms,    setEditPerms]    = useState<string[]>([])
+  const [editAccess,   setEditAccess]   = useState<AccessType>("invite-only")
 
-  const filtered = roles.filter(r =>
-    r.name.toLowerCase().includes(search.toLowerCase())
-  )
+  const filtered = roles.filter(r => {
+    if (search && !r.name.toLowerCase().includes(search.toLowerCase())) return false
+    if (filterAccess && r.access !== filterAccess) return false
+    return true
+  })
 
-  function handleDelete() {
-    const r = roles.find(x => x.id === delId)
-    setRoles(prev => prev.filter(x => x.id !== delId))
-    setDelId(null)
-    if (r) toast("Role deleted", `"${r.name}" has been removed.`, "error")
+  function openEditRole(r: Role) {
+    setEditingRole(r)
+    setEditName(r.name)
+    setEditPerms([...r.permissions])
+    setEditAccess(r.access)
+  }
+
+  function handleEditRole() {
+    if (!editName.trim() || !editingRole) return
+    setRoles(prev => prev.map(r =>
+      r.id === editingRole.id ? { ...r, name: editName.trim(), permissions: editPerms, access: editAccess } : r
+    ))
+    toast("Role updated", `"${editName.trim()}" has been updated.`)
+    setEditingRole(null)
+  }
+
+  function toggleEditPerm(key: string) {
+    setEditPerms(prev => prev.includes(key) ? prev.filter(p => p !== key) : [...prev, key])
   }
 
   return (
@@ -362,9 +414,24 @@ function RolesTab({ onCreateRole }: { onCreateRole: () => void }) {
             />
             <Search className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
           </div>
-          <button className="flex items-center gap-1.5 border rounded-full px-4 py-1.5 text-sm bg-background hover:bg-muted/50 transition-colors">
-            Filter <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
-          </button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className={`flex items-center gap-1.5 border rounded-full px-4 py-1.5 text-sm bg-background hover:bg-muted/50 transition-colors ${filterAccess ? "border-primary text-primary" : ""}`}>
+                Filter <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48 p-2">
+              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide px-1 mb-1">Access Type</p>
+              {(["", "open", "invite-only"] as const).map(a => (
+                <DropdownMenuItem key={a} onClick={() => setFilterAccess(a)} className="flex items-center gap-2">
+                  <div className={`h-3 w-3 rounded-full border-2 flex items-center justify-center shrink-0 ${filterAccess === a ? "border-primary bg-primary" : "border-border"}`}>
+                    {filterAccess === a && <div className="h-1 w-1 rounded-full bg-white" />}
+                  </div>
+                  {a === "" ? "All" : a === "open" ? "Open" : "Invite Only"}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
@@ -404,42 +471,76 @@ function RolesTab({ onCreateRole }: { onCreateRole: () => void }) {
               >
                 <Check className="h-3 w-3" /> Manage Members
               </button>
-              {role.name === "Administrator" ? (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <button className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-40">
-                    <DropdownMenuItem onClick={() => setMembersRole(role)}>
-                      <Pencil className="h-3.5 w-3.5 mr-2" /> Edit Role
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              ) : (
-                <button
-                  onClick={() => setDelId(role.id)}
-                  className="p-1.5 rounded hover:bg-destructive/10 text-destructive transition-colors"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </button>
-              )}
+              <button
+                onClick={() => openEditRole(role)}
+                className="p-1.5 rounded hover:bg-primary/10 text-primary transition-colors"
+                title="Edit Role"
+              >
+                <Pencil className="h-3.5 w-3.5" />
+              </button>
             </div>
           </div>
         ))}
       </div>
 
-      {/* Delete confirm */}
-      <Dialog open={delId !== null} onOpenChange={() => setDelId(null)}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader><DialogTitle>Delete Role</DialogTitle></DialogHeader>
-          <p className="text-sm text-muted-foreground py-2">
-            Are you sure you want to delete <span className="text-foreground font-medium">&ldquo;{roles.find(r => r.id === delId)?.name}&rdquo;</span>? All members will lose their associated permissions.
-          </p>
+      {/* Edit Role modal */}
+      <Dialog open={editingRole !== null} onOpenChange={() => setEditingRole(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle>Edit Role</DialogTitle></DialogHeader>
+          <div className="py-2 space-y-5">
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                Role Name <span className="text-destructive">*</span>
+              </label>
+              <input
+                className="w-full border rounded-lg px-3 py-2 text-sm outline-none bg-background focus:ring-1 focus:ring-primary"
+                value={editName}
+                onChange={e => setEditName(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && handleEditRole()}
+                autoFocus
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Permissions</label>
+              <div className="grid grid-cols-2 gap-2">
+                {ALL_PERMISSIONS.map(p => {
+                  const checked = editPerms.includes(p.key)
+                  return (
+                    <label key={p.key} className="flex items-center gap-2 cursor-pointer select-none">
+                      <div
+                        onClick={() => toggleEditPerm(p.key)}
+                        className={`h-4 w-4 rounded border-2 flex items-center justify-center transition-colors cursor-pointer shrink-0 ${checked ? "border-primary bg-primary" : "border-border"}`}
+                      >
+                        {checked && <Check className="h-2.5 w-2.5 text-white" />}
+                      </div>
+                      <span className="text-xs">{p.label}</span>
+                    </label>
+                  )
+                })}
+              </div>
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Access Type</label>
+              <div className="flex gap-4">
+                {(["open", "invite-only"] as AccessType[]).map(a => (
+                  <label key={a} className="flex items-center gap-2 cursor-pointer">
+                    <div
+                      onClick={() => setEditAccess(a)}
+                      className={`h-4 w-4 rounded-full border-2 flex items-center justify-center transition-colors cursor-pointer ${editAccess === a ? "border-primary bg-primary" : "border-border"}`}
+                    >
+                      {editAccess === a && <div className="h-1.5 w-1.5 rounded-full bg-white" />}
+                    </div>
+                    <span className="text-sm capitalize">{a.replace("-", " ")}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDelId(null)}>Cancel</Button>
-            <Button variant="destructive" onClick={handleDelete}>Delete</Button>
+            <Button variant="outline" onClick={() => setEditingRole(null)}>Cancel</Button>
+            <Button disabled={!editName.trim()} onClick={handleEditRole} className="bg-primary text-primary-foreground hover:bg-primary/90">
+              Save Changes
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

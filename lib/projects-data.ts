@@ -102,9 +102,9 @@ export const projects: Project[] = [
       { label: "Establish API access for ChaCo",      start: f(7, 5), end: f(9, 12), status: "not-started" },
     ],
     milestones: [
-      { label: "MVP\n1", position: f(3, 8), status: "completed"   },
-      { label: "MVP\n2", position: f(7, 5), status: "completed"   },
-      { label: "MVP\n3", position: f(9, 8), status: "completed"   },
+      { label: "Kafka Connect",  position: f(3, 8), status: "completed"   },
+      { label: "API Access",     position: f(7, 5), status: "completed"   },
+      { label: "Full Deploy",    position: f(9, 8), status: "completed"   },
     ],
   },
   {
@@ -125,8 +125,8 @@ export const projects: Project[] = [
       { label: "Establish CASM-Connection via Kafka", start: f(7, 8), end: f(10, 15), status: "not-started" },
     ],
     milestones: [
-      { label: "", position: f(2, 15), status: "completed"   },
-      { label: "", position: f(7, 8),  status: "not-started" },
+      { label: "PoC Ready",   position: f(2, 15), status: "completed"   },
+      { label: "UAT Release", position: f(7, 8),  status: "not-started" },
     ],
   },
   {
@@ -146,8 +146,8 @@ export const projects: Project[] = [
       { label: "Establish CASM-Connection via Kafka", start: f(9), end: f(12, 31), status: "not-started" },
     ],
     milestones: [
-      { label: "", position: f(8, 20),  status: "completed"   },
-      { label: "", position: f(12, 25), status: "not-started" },
+      { label: "Model Ready",  position: f(8, 20),  status: "completed"   },
+      { label: "Production",   position: f(12, 25), status: "not-started" },
     ],
   },
   {
@@ -166,7 +166,7 @@ export const projects: Project[] = [
       { label: "Establish CASM-Connection via Kafka", start: f(1), end: f(3, 28), status: "in-progress" },
     ],
     milestones: [
-      { label: "", position: f(4, 12), status: "not-started" },
+      { label: "v1 Release", position: f(4, 12), status: "not-started" },
     ],
   },
   {

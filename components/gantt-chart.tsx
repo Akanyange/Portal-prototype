@@ -63,17 +63,19 @@ export function GanttChart() {
           {/* Header cell — same height as Q + month headers (72 px) */}
           <div className="h-[72px] flex items-center justify-between px-4 border-b bg-card">
             <span className="font-semibold text-sm">Projects</span>
-            <div className="relative group">
-              <Link href="/projects/new">
-                <Button size="icon" variant="outline" className="h-7 w-7 rounded-full border-muted-foreground/30">
-                  <Plus className="h-3.5 w-3.5" />
-                </Button>
-              </Link>
-              {/* Tooltip */}
-              <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 bg-foreground text-background text-xs px-2 py-1 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 shadow-sm">
-                Add New Project
+            {role !== "General User" && (
+              <div className="relative group">
+                <Link href="/projects/new">
+                  <Button size="icon" variant="outline" className="h-7 w-7 rounded-full border-muted-foreground/30">
+                    <Plus className="h-3.5 w-3.5" />
+                  </Button>
+                </Link>
+                {/* Tooltip */}
+                <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 bg-foreground text-background text-xs px-2 py-1 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 shadow-sm">
+                  Add New Project
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
           {/* Project rows */}
@@ -201,45 +203,40 @@ export function GanttChart() {
                           height: ROW_H,
                         }}
                       >
-                        {/* Label */}
-                        <span
-                          className="absolute left-0 right-0 text-[9px] text-foreground leading-tight overflow-hidden whitespace-nowrap pl-0.5"
-                          style={{ top: 18 }}
-                        >
-                          {task.label}
-                        </span>
                         {/* Bar */}
                         <div
-                          className={`absolute left-0 right-0 h-[7px] rounded-full ${TASK_BAR[task.status]}`}
-                          style={{ top: 32 }}
+                          className={`absolute left-0 right-0 h-3.5 rounded-full ${TASK_BAR[task.status]}`}
+                          style={{ top: Math.round((ROW_H - 14) / 2) }}
                         />
                       </div>
                     )
                   })}
 
-                  {/* ── Milestones: label + diamond ───────────────────────── */}
+                  {/* ── Milestones: diamond at top of row + label below ───── */}
                   {project.milestones.map((ms, i) => (
                     <div
                       key={i}
                       className="absolute z-10"
                       style={{ left: `${ms.position * 100}%`, top: 0, height: ROW_H }}
                     >
-                      {ms.label && (
-                        <span
-                          className="absolute text-[8px] text-muted-foreground text-center whitespace-pre leading-tight"
-                          style={{ top: 14, transform: "translateX(-50%)" }}
-                        >
-                          {ms.label}
-                        </span>
-                      )}
+                      {/* Diamond — sits at the very top of the row */}
                       <div
                         className={`absolute h-3 w-3 rotate-45 shrink-0 ${
                           ms.status === "completed"
                             ? "bg-primary"
                             : "bg-card border-2 border-gray-400"
                         }`}
-                        style={{ top: 29, transform: "translateX(-50%)" }}
+                        style={{ top: 4, transform: "translateX(-50%)" }}
                       />
+                      {/* Label — below the diamond, above the bar */}
+                      {ms.label && (
+                        <span
+                          className="absolute text-[8px] text-muted-foreground text-center leading-tight whitespace-nowrap"
+                          style={{ top: 19, transform: "translateX(-50%)", maxWidth: 60 }}
+                        >
+                          {ms.label}
+                        </span>
+                      )}
                     </div>
                   ))}
                 </div>
