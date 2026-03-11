@@ -41,9 +41,9 @@ export default function OverviewPage() {
           <div className="flex items-center justify-between px-3 py-1">
             <div className="flex items-center gap-1.5">
               <LayoutList className="h-3 w-3 text-primary shrink-0" />
-              <span className="text-[11px] font-medium text-muted-foreground">All Projects Status</span>
+              <span className="text-[12px] font-medium text-muted-foreground">All Projects Status</span>
             </div>
-            <span className="text-[11px] font-medium text-emerald-400">+5% vs last month</span>
+            <span className="text-[12px] font-medium text-emerald-400">+5% vs last month</span>
           </div>
           <div className="px-3 pb-1.5">
             <StatusPieChart slices={PIE_SLICES} total={TOTAL} compact />
@@ -54,15 +54,15 @@ export default function OverviewPage() {
         <Card className="flex flex-col">
           <div className="flex items-center gap-1.5 px-3 py-1">
             <LayoutList className="h-3 w-3 text-primary shrink-0" />
-            <span className="text-[11px] font-medium text-muted-foreground">Total Completed Projects</span>
+            <span className="text-[12px] font-medium text-muted-foreground">Total Completed Projects</span>
           </div>
           <div className="px-3 py-1">
-            <span className="text-lg font-bold leading-none">{COMPLETED}</span>
+            <span className="text-xl font-bold leading-none">{COMPLETED}</span>
           </div>
           <div className="flex items-center gap-1.5 px-3 pb-1.5">
             <TrendingUp className="h-3 w-3 text-emerald-400 shrink-0" />
-            <span className="text-[10px] text-emerald-400 flex-1">+5% vs last month</span>
-            <Link href="/projects" className="text-[10px] text-primary font-medium hover:underline whitespace-nowrap">
+            <span className="text-[11px] text-emerald-400 flex-1">+5% vs last month</span>
+            <Link href="/projects" className="text-[11px] text-primary font-medium hover:underline whitespace-nowrap">
               View All &gt;
             </Link>
           </div>
@@ -72,10 +72,10 @@ export default function OverviewPage() {
         <Card className="flex flex-col">
           <div className="flex items-center gap-1.5 px-3 py-1">
             <Activity className="h-3 w-3 text-primary shrink-0" />
-            <span className="text-[11px] font-medium text-muted-foreground">Ongoing Projects</span>
+            <span className="text-[12px] font-medium text-muted-foreground">Ongoing Projects</span>
           </div>
           <div className="px-3 pb-1.5 py-1">
-            <span className="text-lg font-bold leading-none">{ONGOING}</span>
+            <span className="text-xl font-bold leading-none">{ONGOING}</span>
           </div>
         </Card>
       </div>

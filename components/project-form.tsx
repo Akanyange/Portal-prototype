@@ -131,9 +131,9 @@ export function ProjectForm({ mode, initialData, onSave, onCancel }: ProjectForm
   const [milestones,  setMilestones]  = useState<MilestoneData[]>(initialData?.milestones ?? [])
 
   // Accordion state
-  const [openInfo,       setOpenInfo]       = useState(true)
-  const [openContact,    setOpenContact]    = useState(true)
-  const [openMilestones, setOpenMilestones] = useState(true)
+  const [openInfo,       setOpenInfo]       = useState(false)
+  const [openContact,    setOpenContact]    = useState(false)
+  const [openMilestones, setOpenMilestones] = useState(false)
 
   // Milestone modal
   const [showModal,        setShowModal]        = useState(false)
@@ -216,7 +216,7 @@ export function ProjectForm({ mode, initialData, onSave, onCancel }: ProjectForm
                 type="date"
                 value={startDate}
                 onChange={e => setStartDate(e.target.value)}
-                className="w-full text-sm outline-none bg-transparent"
+                className="w-full text-sm outline-none bg-transparent scheme-dark"
               />
             </Field>
             <Field label="Estimated End Date" required>
@@ -224,7 +224,7 @@ export function ProjectForm({ mode, initialData, onSave, onCancel }: ProjectForm
                 type="date"
                 value={endDate}
                 onChange={e => setEndDate(e.target.value)}
-                className="w-full text-sm outline-none bg-transparent"
+                className="w-full text-sm outline-none bg-transparent scheme-dark"
               />
             </Field>
           </div>
