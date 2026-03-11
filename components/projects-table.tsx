@@ -29,7 +29,11 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { projects, STATUS_BADGE, STATUS_LABEL } from "@/lib/projects-data"
+import { projects, STATUS_BADGE, STATUS_LABEL, type ProjectStatus } from "@/lib/projects-data"
+
+const PE_OPTIONS    = ["AI Network Foundations", "Service Observability", "Use case for AN L4"]
+const TRIBE_OPTIONS = ["AI for Networks"]
+const STATUS_OPTIONS: ProjectStatus[] = ["planned", "ongoing", "completed"]
 import { toast } from "@/lib/toast"
 import {
   ArrowUpDown,
@@ -59,10 +63,20 @@ export function ProjectsTable() {
     projectId: string
     projectName: string
   } | null>(null)
+  const [filterPE,     setFilterPE]     = useState<string>("")
+  const [filterTribe,  setFilterTribe]  = useState<string>("")
+  const [filterStatus, setFilterStatus] = useState<string>("")
 
-  const visibleProjects = role === "General User"
+  const roleFiltered = role === "General User"
     ? projects.filter(p => p.visibility === "Public")
     : projects
+
+  const visibleProjects = roleFiltered.filter(p => {
+    if (filterPE     && p.pe     !== filterPE)     return false
+    if (filterTribe  && p.tribe  !== filterTribe)  return false
+    if (filterStatus && p.status !== filterStatus) return false
+    return true
+  })
 
   const totalPages = Math.max(1, Math.ceil(visibleProjects.length / itemsPerPage))
   const start      = (currentPage - 1) * itemsPerPage
@@ -109,11 +123,56 @@ export function ProjectsTable() {
             <span>Due date</span>
           </button>
 
-          {/* Filter */}
-          <button className="flex items-center gap-2 border rounded-full px-4 py-1.5 text-sm bg-background hover:bg-muted/50 transition-colors">
-            Filter
-            <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
-          </button>
+          {/* Portfolio Element filter */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="flex items-center gap-2 border rounded-full px-4 py-1.5 text-sm bg-background hover:bg-muted/50 transition-colors outline-none">
+                {filterPE || "Portfolio Element"}
+                <ChevronDown className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-56">
+              <DropdownMenuRadioGroup value={filterPE} onValueChange={v => { setFilterPE(v === filterPE ? "" : v); setCurrentPage(1) }}>
+                {PE_OPTIONS.map(opt => (
+                  <DropdownMenuRadioItem key={opt} value={opt}>{opt}</DropdownMenuRadioItem>
+                ))}
+              </DropdownMenuRadioGroup>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Tribe filter */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="flex items-center gap-2 border rounded-full px-4 py-1.5 text-sm bg-background hover:bg-muted/50 transition-colors outline-none">
+                {filterTribe || "Tribe"}
+                <ChevronDown className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-44">
+              <DropdownMenuRadioGroup value={filterTribe} onValueChange={v => { setFilterTribe(v === filterTribe ? "" : v); setCurrentPage(1) }}>
+                {TRIBE_OPTIONS.map(opt => (
+                  <DropdownMenuRadioItem key={opt} value={opt}>{opt}</DropdownMenuRadioItem>
+                ))}
+              </DropdownMenuRadioGroup>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Status filter */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="flex items-center gap-2 border rounded-full px-4 py-1.5 text-sm bg-background hover:bg-muted/50 transition-colors outline-none">
+                {filterStatus ? STATUS_LABEL[filterStatus as ProjectStatus] : "Status"}
+                <ChevronDown className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-36">
+              <DropdownMenuRadioGroup value={filterStatus} onValueChange={v => { setFilterStatus(v === filterStatus ? "" : v); setCurrentPage(1) }}>
+                {STATUS_OPTIONS.map(opt => (
+                  <DropdownMenuRadioItem key={opt} value={opt}>{STATUS_LABEL[opt]}</DropdownMenuRadioItem>
+                ))}
+              </DropdownMenuRadioGroup>
+            </DropdownMenuContent>
+          </DropdownMenu>
 
           {/* Search */}
           <div className="flex items-center gap-2 border rounded-full px-3 py-1.5 bg-background min-w-50">

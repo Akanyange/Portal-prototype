@@ -63,11 +63,11 @@ export function ProjectFilters({ activeView, onViewChange }: ProjectFiltersProps
         {/* Right: dropdowns + date + search */}
         <div className="flex items-center gap-2 flex-wrap">
 
-          {/* Filter by PE */}
+          {/* Portfolio Element */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button className="flex items-center gap-2 border rounded-full px-4 py-1.5 text-sm bg-background hover:bg-muted/50 transition-colors outline-none">
-                {selectedPE || "Filter by PE"}
+                {selectedPE || "Portfolio Element"}
                 <ChevronDown className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
               </button>
             </DropdownMenuTrigger>
@@ -82,11 +82,11 @@ export function ProjectFilters({ activeView, onViewChange }: ProjectFiltersProps
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* All Tribes */}
+          {/* Tribe */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button className="flex items-center gap-2 border rounded-full px-4 py-1.5 text-sm bg-background hover:bg-muted/50 transition-colors outline-none">
-                {selectedTribe || "All Tribes"}
+                {selectedTribe || "Tribe"}
                 <ChevronDown className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
               </button>
             </DropdownMenuTrigger>
