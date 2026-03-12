@@ -5,8 +5,9 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Plus, ChevronRight, CalendarDays, User, ExternalLink } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { projects, STATUS_DOT, STATUS_LABEL, type TaskStatus } from "@/lib/projects-data"
+import { projects, STATUS_DOT, STATUS_LABEL, type TaskStatus, type GanttMilestone } from "@/lib/projects-data"
 import { useRole } from "@/lib/role-context"
+import { MilestoneViewModal } from "@/components/milestone-view-modal"
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -15,6 +16,18 @@ function getCurrentYearFraction(): number {
   const start = new Date(now.getFullYear(), 0, 1).getTime()
   const end   = new Date(now.getFullYear() + 1, 0, 1).getTime()
   return (now.getTime() - start) / (end - start)
+}
+
+const ORDINAL_MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"]
+
+function positionToDateStr(position: number): string {
+  const d = new Date(2026, 0, 1 + Math.round(position * 365))
+  const day = d.getDate()
+  const suffix = [11,12,13].includes(day) ? "th"
+    : day % 10 === 1 ? "st"
+    : day % 10 === 2 ? "nd"
+    : day % 10 === 3 ? "rd" : "th"
+  return `${day}${suffix} ${ORDINAL_MONTHS[d.getMonth()]} ${d.getFullYear()}`
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -38,6 +51,7 @@ export function GanttChart() {
   const { role } = useRole()
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const [todayFraction, setTodayFraction] = useState<number | null>(null)
+  const [activeMilestone, setActiveMilestone] = useState<{ ms: GanttMilestone; projectName: string } | null>(null)
 
   const visibleProjects = role === "General User"
     ? projects.filter(p => p.visibility === "Public")
@@ -221,12 +235,13 @@ export function GanttChart() {
                     >
                       {/* Diamond — sits at the very top of the row */}
                       <div
-                        className={`absolute h-3 w-3 rotate-45 shrink-0 ${
+                        className={`absolute h-3 w-3 rotate-45 shrink-0 cursor-pointer hover:scale-125 transition-transform ${
                           ms.status === "completed"
                             ? "bg-primary"
                             : "bg-card border-2 border-gray-400"
                         }`}
                         style={{ top: 4, transform: "translateX(-50%)" }}
+                        onClick={e => { e.stopPropagation(); setActiveMilestone({ ms, projectName: project.name }) }}
                       />
                       {/* Label — below the diamond, above the bar */}
                       {ms.label && (
@@ -246,27 +261,42 @@ export function GanttChart() {
         </div>
       </div>
 
+      {/* ── Milestone view modal ────────────────────────────────────────────── */}
+      {activeMilestone && (
+        <MilestoneViewModal
+          title={activeMilestone.ms.label}
+          status={activeMilestone.ms.status}
+          timelineDate={positionToDateStr(activeMilestone.ms.position)}
+          description={activeMilestone.ms.description}
+          updatedAt={activeMilestone.ms.updatedAt}
+          canEdit={role !== "General User"}
+          onClose={() => setActiveMilestone(null)}
+        />
+      )}
+
       {/* ── Legend ─────────────────────────────────────────────────────────── */}
-      <div className="border-t px-4 py-2.5 flex flex-wrap items-center gap-x-5 gap-y-1.5 text-xs text-muted-foreground bg-card">
+      <div className="border-t px-4 py-2.5 flex items-center justify-between text-xs text-muted-foreground bg-card">
         <div className="flex items-center gap-1.5">
           <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
           <span>Updated 5m ago</span>
         </div>
-        <div className="flex items-center gap-1.5">
-          <div className="h-3 w-3 rotate-45 bg-primary shrink-0" />
-          <span>Milestone completed</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="h-3 w-3 rotate-45 bg-card border-2 border-gray-400 shrink-0" />
-          <span>Milestone pending</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="h-2 w-10 rounded-full bg-gray-500" />
-          <span>Planned</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="h-2 w-10 rounded-full bg-primary" />
-          <span>Ongoing / Completed</span>
+        <div className="flex flex-wrap items-center justify-end gap-x-5 gap-y-1.5">
+          <div className="flex items-center gap-1.5">
+            <div className="h-3 w-3 rotate-45 bg-primary shrink-0" />
+            <span>Milestone completed</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="h-3 w-3 rotate-45 bg-card border-2 border-gray-400 shrink-0" />
+            <span>Milestone pending</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="h-2 w-10 rounded-full bg-gray-500" />
+            <span>Planned</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="h-2 w-10 rounded-full bg-primary" />
+            <span>Ongoing / Completed</span>
+          </div>
         </div>
       </div>
     </div>

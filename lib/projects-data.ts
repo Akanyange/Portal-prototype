@@ -14,6 +14,8 @@ export interface GanttMilestone {
   label: string
   position: number
   status: MilestoneStatus
+  description?: string
+  updatedAt?: string
 }
 
 export interface MilestoneSegment {
@@ -26,6 +28,8 @@ export interface MilestoneSegment {
 export interface MilestoneMarker {
   date: string
   status: MilestoneStatus
+  description?: string
+  updatedAt?: string
 }
 
 export interface MilestoneRow {
@@ -102,9 +106,9 @@ export const projects: Project[] = [
       { label: "Establish API access for ChaCo",      start: f(7, 5), end: f(9, 12), status: "not-started" },
     ],
     milestones: [
-      { label: "Kafka Connect",  position: f(3, 8), status: "completed"   },
-      { label: "API Access",     position: f(7, 5), status: "completed"   },
-      { label: "Full Deploy",    position: f(9, 8), status: "completed"   },
+      { label: "Kafka Connect",  position: f(3, 8), status: "completed",   description: "Establish the Kafka connection to CASM and validate message flow between systems. Confirm message schema, throughput targets, and error handling before sign-off.", updatedAt: "2w ago" },
+      { label: "API Access",     position: f(7, 5), status: "completed",   description: "Set up API access credentials for ChaCo and complete integration testing against the staging environment.", updatedAt: "1w ago" },
+      { label: "Full Deploy",    position: f(9, 8), status: "completed",   description: "Full production deployment of all components with monitoring and alerting in place. Includes smoke tests and rollback plan sign-off.", updatedAt: "3d ago" },
     ],
   },
   {
@@ -125,8 +129,8 @@ export const projects: Project[] = [
       { label: "Establish CASM-Connection via Kafka", start: f(7, 8), end: f(10, 15), status: "not-started" },
     ],
     milestones: [
-      { label: "PoC Ready",   position: f(2, 15), status: "completed"   },
-      { label: "UAT Release", position: f(7, 8),  status: "not-started" },
+      { label: "PoC Ready",   position: f(2, 15), status: "completed",   description: "Proof of concept demonstrating core incident detection capabilities on sample data. Presented to stakeholders for initial feedback.", updatedAt: "1w ago" },
+      { label: "UAT Release", position: f(7, 8),  status: "not-started", description: "User acceptance testing release with full feature set for stakeholder validation. Requires sign-off from QA lead and product owner.", updatedAt: "5d ago" },
     ],
   },
   {
@@ -218,7 +222,7 @@ export const projects: Project[] = [
         segments: [
           { label: "Establish CASM-Connection via Kafka", startDate: "2026-01-07", endDate: "2026-01-30", type: "completed" },
         ],
-        markers: [{ date: "2026-01-30", status: "completed" }],
+        markers: [{ date: "2026-01-30", status: "completed", description: "Collect and document project requirements by engaging stakeholders to understand business goals, user needs, and system expectations. Define functional and non-functional requirements, clarify scope and constraints, and produce a structured requirements document to guide design and development.", updatedAt: "1w ago" }],
       },
       {
         id: "ms2",

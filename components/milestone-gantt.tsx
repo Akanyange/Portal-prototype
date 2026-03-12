@@ -1,8 +1,9 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import type { MilestoneRow, ProjectStatus } from "@/lib/projects-data"
+import type { MilestoneRow, MilestoneMarker, ProjectStatus } from "@/lib/projects-data"
 import { STATUS_LABEL, STATUS_BADGE } from "@/lib/projects-data"
+import { MilestoneViewModal } from "@/components/milestone-view-modal"
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -13,6 +14,20 @@ interface ViewConfig {
   totalCols: number
   daysPerCol: number
   headers: string[]
+}
+
+// ── Helpers ────────────────────────────────────────────────────────────────────
+
+const ORDINAL_MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"]
+
+function formatIsoDate(iso: string): string {
+  const d = new Date(iso)
+  const day = d.getDate()
+  const suffix = [11,12,13].includes(day) ? "th"
+    : day % 10 === 1 ? "st"
+    : day % 10 === 2 ? "nd"
+    : day % 10 === 3 ? "rd" : "th"
+  return `${day}${suffix} ${ORDINAL_MONTHS[d.getMonth()]} ${d.getFullYear()}`
 }
 
 // ── Constants ──────────────────────────────────────────────────────────────────
@@ -82,10 +97,12 @@ interface Props {
   projectStatus: ProjectStatus
   milestoneRows: MilestoneRow[]
   timeView: GanttTimeView
+  canEdit?: boolean
 }
 
-export function MilestoneGantt({ projectName, projectStatus, milestoneRows, timeView }: Props) {
+export function MilestoneGantt({ projectName, projectStatus, milestoneRows, timeView, canEdit }: Props) {
   const [todayPx, setTodayPx] = useState<number | null>(null)
+  const [activeMarker, setActiveMarker] = useState<{ marker: MilestoneMarker; rowName: string } | null>(null)
 
   const cfg        = getViewConfig(timeView)
   const totalWidth = cfg.totalCols * cfg.colW
@@ -214,12 +231,13 @@ export function MilestoneGantt({ projectName, projectStatus, milestoneRows, time
                         style={{ left: x, top: 0, height: ROW_H }}
                       >
                         <div
-                          className={`absolute h-3 w-3 rotate-45 ${
+                          className={`absolute h-3 w-3 rotate-45 cursor-pointer hover:scale-125 transition-transform ${
                             mk.status === "completed"
                               ? "bg-primary"
                               : "bg-card border-2 border-gray-400"
                           }`}
                           style={{ top: 29, transform: "translate(-50%, 0)" }}
+                          onClick={e => { e.stopPropagation(); setActiveMarker({ marker: mk, rowName: row.name }) }}
                         />
                       </div>
                     )
@@ -231,32 +249,47 @@ export function MilestoneGantt({ projectName, projectStatus, milestoneRows, time
         </div>
       </div>
 
+      {/* ── Marker view modal ─────────────────────────────────────────────────── */}
+      {activeMarker && (
+        <MilestoneViewModal
+          title={activeMarker.rowName}
+          status={activeMarker.marker.status}
+          timelineDate={formatIsoDate(activeMarker.marker.date)}
+          description={activeMarker.marker.description}
+          updatedAt={activeMarker.marker.updatedAt}
+          canEdit={canEdit}
+          onClose={() => setActiveMarker(null)}
+        />
+      )}
+
       {/* ── Legend ────────────────────────────────────────────────────────────── */}
-      <div className="border-t px-4 py-2.5 flex flex-wrap items-center gap-x-5 gap-y-1.5 text-xs text-muted-foreground bg-card">
+      <div className="border-t px-4 py-2.5 flex items-center justify-between text-xs text-muted-foreground bg-card">
         <div className="flex items-center gap-1.5">
           <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
           <span>Updated 5m ago</span>
         </div>
-        <div className="flex items-center gap-1.5">
-          <div className="h-3 w-3 rotate-45 bg-primary shrink-0" />
-          <span>Milestone completed</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="h-3 w-3 rotate-45 bg-card border-2 border-gray-400 shrink-0" />
-          <span>Milestone pending</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="h-2 w-10 rounded-full bg-gray-500" />
-          <span>Planned</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="h-2 w-8 rounded-l-full bg-primary inline-block" />
-          <div className="h-2 w-3 rounded-r-full bg-gray-500 -ml-px inline-block" />
-          <span>Ongoing</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="h-2 w-10 rounded-full bg-primary" />
-          <span>Completed</span>
+        <div className="flex flex-wrap items-center justify-end gap-x-5 gap-y-1.5">
+          <div className="flex items-center gap-1.5">
+            <div className="h-3 w-3 rotate-45 bg-primary shrink-0" />
+            <span>Milestone completed</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="h-3 w-3 rotate-45 bg-card border-2 border-gray-400 shrink-0" />
+            <span>Milestone pending</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="h-2 w-10 rounded-full bg-gray-500" />
+            <span>Planned</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="h-2 w-8 rounded-l-full bg-primary inline-block" />
+            <div className="h-2 w-3 rounded-r-full bg-gray-500 -ml-px inline-block" />
+            <span>Ongoing</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="h-2 w-10 rounded-full bg-primary" />
+            <span>Completed</span>
+          </div>
         </div>
       </div>
     </div>

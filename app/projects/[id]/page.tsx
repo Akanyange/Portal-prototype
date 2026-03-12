@@ -15,10 +15,12 @@ import {
 } from "lucide-react"
 import { projects, STATUS_BADGE, STATUS_LABEL } from "@/lib/projects-data"
 import { MilestoneGantt, type GanttTimeView } from "@/components/milestone-gantt"
+import { useRole } from "@/lib/role-context"
 
 export default function ProjectDetailPage() {
   const { id } = useParams<{ id: string }>()
   const [timeView, setTimeView] = useState<GanttTimeView>("Months")
+  const { role } = useRole()
 
   const project = projects.find(p => p.id === id)
 
@@ -206,6 +208,7 @@ export default function ProjectDetailPage() {
             projectStatus={project.status}
             milestoneRows={project.milestoneRows}
             timeView={timeView}
+            canEdit={role !== "General User"}
           />
         </div>
       )}
