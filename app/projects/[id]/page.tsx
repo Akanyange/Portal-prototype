@@ -12,10 +12,15 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronDown,
+  Download,
+  RefreshCw,
+  CheckCircle2,
 } from "lucide-react"
-import { projects, STATUS_BADGE, STATUS_LABEL } from "@/lib/projects-data"
+import { projects, STATUS_BADGE, STATUS_LABEL, type MilestoneRow } from "@/lib/projects-data"
 import { MilestoneGantt, type GanttTimeView } from "@/components/milestone-gantt"
 import { useRole } from "@/lib/role-context"
+import { JiraConnectModal } from "@/components/jira-connect-modal"
+import type { JiraConfig } from "@/lib/jira-service"
 
 export default function ProjectDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -27,6 +32,35 @@ export default function ProjectDetailPage() {
   const [isPublic, setIsPublic] = useState<boolean>(
     project ? project.visibility === "Public" : false
   )
+
+  // ── JIRA integration state ──────────────────────────────────────────────────
+  const [jiraModalOpen,  setJiraModalOpen]  = useState(false)
+  const [jiraConfig,     setJiraConfig]     = useState<JiraConfig | null>(null)
+  const [jiraSyncedAt,   setJiraSyncedAt]   = useState<string | null>(null)
+  const [jiraRows,       setJiraRows]       = useState<MilestoneRow[] | null>(null)
+  const [syncing,        setSyncing]        = useState(false)
+
+  function handleJiraConnected(rows: MilestoneRow[], config: JiraConfig) {
+    setJiraRows(rows)
+    setJiraConfig(config)
+    setJiraSyncedAt(new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }))
+  }
+
+  async function handleSyncNow() {
+    if (!jiraConfig) return
+    setSyncing(true)
+    try {
+      const { fetchJiraMilestones } = await import("@/lib/jira-service")
+      const rows = await fetchJiraMilestones(jiraConfig)
+      setJiraRows(rows)
+      setJiraSyncedAt(new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }))
+    } finally {
+      setSyncing(false)
+    }
+  }
+
+  // Active milestone rows: JIRA rows take precedence over static data
+  const activeMilestoneRows = jiraRows ?? project?.milestoneRows
 
   if (!project) {
     return (
@@ -77,13 +111,22 @@ export default function ProjectDetailPage() {
             </div>
           )}
         </div>
-        <Link
-          href={`/projects/${project.id}/edit`}
-          className="shrink-0 flex items-center gap-2 bg-foreground text-background px-4 py-2 rounded-full text-sm font-medium hover:bg-foreground/90 transition-colors"
-        >
-          <Pencil className="h-3.5 w-3.5" />
-          Edit Project
-        </Link>
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={() => setJiraModalOpen(true)}
+            className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-full text-sm font-medium hover:bg-primary/90 transition-colors"
+          >
+            <Download className="h-3.5 w-3.5" />
+            Import Project Data
+          </button>
+          <Link
+            href={`/projects/${project.id}/edit`}
+            className="flex items-center gap-2 bg-foreground text-background px-4 py-2 rounded-full text-sm font-medium hover:bg-foreground/90 transition-colors"
+          >
+            <Pencil className="h-3.5 w-3.5" />
+            Edit Project
+          </Link>
+        </div>
       </div>
 
       {/* ── Meta row ────────────────────────────────────────────────────────── */}
@@ -127,6 +170,34 @@ export default function ProjectDetailPage() {
         </div>
       </div>
 
+      {/* ── JIRA connection status badge ────────────────────────────────────── */}
+      {jiraConfig && (
+        <div className="flex items-center gap-3 rounded-lg border bg-emerald-500/5 border-emerald-500/20 px-4 py-2.5">
+          <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
+          <div className="flex-1 min-w-0">
+            <span className="text-sm font-medium text-emerald-600 dark:text-emerald-400">
+              Connected to JIRA
+            </span>
+            <span className="text-xs text-muted-foreground ml-2">
+              {jiraConfig.domain} · project <strong>{jiraConfig.projectKey}</strong>
+            </span>
+          </div>
+          {jiraSyncedAt && (
+            <span className="text-xs text-muted-foreground whitespace-nowrap">
+              Last synced {jiraSyncedAt}
+            </span>
+          )}
+          <button
+            onClick={handleSyncNow}
+            disabled={syncing}
+            className="flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 transition-colors disabled:opacity-50"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${syncing ? "animate-spin" : ""}`} />
+            {syncing ? "Syncing…" : "Sync now"}
+          </button>
+        </div>
+      )}
+
       {/* ── Links ───────────────────────────────────────────────────────────── */}
       {project.links && project.links.length > 0 && (
         <div className="space-y-1.5">
@@ -157,7 +228,7 @@ export default function ProjectDetailPage() {
       )}
 
       {/* ── Timeline section ────────────────────────────────────────────────── */}
-      {project.milestoneRows && project.milestoneRows.length > 0 && (
+      {activeMilestoneRows && activeMilestoneRows.length > 0 && (
         <div className="space-y-3">
 
           {/* Timeline header */}
@@ -206,12 +277,21 @@ export default function ProjectDetailPage() {
           <MilestoneGantt
             projectName={project.name}
             projectStatus={project.status}
-            milestoneRows={project.milestoneRows}
+            milestoneRows={activeMilestoneRows!}
             timeView={timeView}
             canEdit={role !== "General User"}
           />
         </div>
       )}
+
+      {/* ── JIRA Connect Modal ───────────────────────────────────────────────── */}
+      <JiraConnectModal
+        open={jiraModalOpen}
+        onClose={() => setJiraModalOpen(false)}
+        projectName={project.name}
+        projectKey={project.id.toUpperCase().replace(/-/g, "")}
+        onConnected={handleJiraConnected}
+      />
     </div>
   )
 }

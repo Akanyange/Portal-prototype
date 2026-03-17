@@ -33,9 +33,11 @@ function formatIsoDate(iso: string): string {
 // ── Constants ──────────────────────────────────────────────────────────────────
 
 const GANTT_START  = new Date(2026, 0, 5)   // Jan 5, 2026 (Monday)
-const ROW_H        = 72
+const ROW_H        = 76
 const HEADER_H     = 44
-const LEFT_W       = 220
+const LEFT_W       = 268
+const BAR_H        = 14    // px — matches main gantt chart
+const DIAMOND_S    = 18    // px — rotated square side length
 
 const MONTHS_SHORT = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
 const MONTHS_LONG  = ["January","February","March","April","May","June","July","August","September","October","November","December"]
@@ -199,23 +201,23 @@ export function MilestoneGantt({ projectName, projectStatus, milestoneRows, time
                     const left  = dateToPx(seg.startDate, cfg)
                     const width = dateToPx(seg.endDate, cfg) - left
                     if (width <= 0) return null
+                    // vertical rhythm: label at 10px, bar centred at 38px
+                    const barTop = Math.round((ROW_H - BAR_H) / 2) + 4
                     return (
                       <div
                         key={si}
                         className="absolute"
                         style={{ left, width, top: 0, height: ROW_H }}
                       >
-                        <span
-                          className="absolute left-0 right-0 text-[9px] text-foreground leading-tight overflow-hidden whitespace-nowrap pl-0.5"
-                          style={{ top: 16 }}
-                        >
-                          {seg.label}
-                        </span>
                         <div
-                          className={`absolute left-0 right-0 h-[7px] rounded-full ${
-                            seg.type === "not-started" ? "bg-gray-300" : "bg-primary"
+                          className={`absolute left-0 right-0 rounded-full ${
+                            seg.type === "not-started"
+                              ? "bg-gray-300 dark:bg-gray-600"
+                              : seg.type === "in-progress"
+                              ? "bg-primary/80"
+                              : "bg-primary"
                           }`}
-                          style={{ top: 32 }}
+                          style={{ top: barTop, height: BAR_H }}
                         />
                       </div>
                     )
@@ -223,20 +225,42 @@ export function MilestoneGantt({ projectName, projectStatus, milestoneRows, time
 
                   {/* Diamond markers */}
                   {row.markers.map((mk, mi) => {
-                    const x = dateToPx(mk.date, cfg)
+                    const x      = dateToPx(mk.date, cfg)
+                    const barTop = Math.round((ROW_H - BAR_H) / 2) + 4
+                    // centre diamond on bar
+                    const diamondTop = barTop + BAR_H / 2 - DIAMOND_S / 2
                     return (
                       <div
                         key={mi}
                         className="absolute z-10"
                         style={{ left: x, top: 0, height: ROW_H }}
                       >
+                        {/* Label above diamond */}
+                        <span
+                          className="absolute text-[9px] font-semibold text-foreground/80 whitespace-nowrap leading-tight"
+                          style={{
+                            top: diamondTop - 14,
+                            transform: "translateX(-50%)",
+                            maxWidth: 80,
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                          }}
+                        >
+                          {row.name}
+                        </span>
+                        {/* Diamond */}
                         <div
-                          className={`absolute h-3 w-3 rotate-45 cursor-pointer hover:scale-125 transition-transform ${
+                          className={`absolute cursor-pointer hover:scale-125 transition-transform ${
                             mk.status === "completed"
                               ? "bg-primary"
                               : "bg-card border-2 border-gray-400"
                           }`}
-                          style={{ top: 29, transform: "translate(-50%, 0)" }}
+                          style={{
+                            width:  DIAMOND_S,
+                            height: DIAMOND_S,
+                            top:    diamondTop,
+                            transform: "translateX(-50%) rotate(45deg)",
+                          }}
                           onClick={e => { e.stopPropagation(); setActiveMarker({ marker: mk, rowName: row.name }) }}
                         />
                       </div>
@@ -270,24 +294,23 @@ export function MilestoneGantt({ projectName, projectStatus, milestoneRows, time
         </div>
         <div className="flex flex-wrap items-center justify-end gap-x-5 gap-y-1.5">
           <div className="flex items-center gap-1.5">
-            <div className="h-3 w-3 rotate-45 bg-primary shrink-0" />
+            <div className="h-3.5 w-3.5 rotate-45 bg-primary shrink-0" />
             <span>Milestone completed</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <div className="h-3 w-3 rotate-45 bg-card border-2 border-gray-400 shrink-0" />
-            <span>Milestone pending</span>
+            <div className="h-3.5 w-3.5 rotate-45 bg-card border-2 border-gray-400 shrink-0" />
+            <span>Milestone not started</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <div className="h-2 w-10 rounded-full bg-gray-500" />
-            <span>Planned</span>
+            <div className="h-3 w-10 rounded-full bg-gray-300 dark:bg-gray-600" />
+            <span>not started</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <div className="h-2 w-8 rounded-l-full bg-primary inline-block" />
-            <div className="h-2 w-3 rounded-r-full bg-gray-500 -ml-px inline-block" />
-            <span>Ongoing</span>
+            <div className="h-3 w-10 rounded-full bg-primary/80" />
+            <span>In Progress</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <div className="h-2 w-10 rounded-full bg-primary" />
+            <div className="h-3 w-10 rounded-full bg-primary" />
             <span>Completed</span>
           </div>
         </div>

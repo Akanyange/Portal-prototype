@@ -226,34 +226,50 @@ export function GanttChart() {
                     )
                   })}
 
-                  {/* ── Milestones: diamond at top of row + label below ───── */}
-                  {project.milestones.map((ms, i) => (
-                    <div
-                      key={i}
-                      className="absolute z-10"
-                      style={{ left: `${ms.position * 100}%`, top: 0, height: ROW_H }}
-                    >
-                      {/* Diamond — sits at the very top of the row */}
+                  {/* ── Milestones: label above diamond, centred on bar ───── */}
+                  {project.milestones.map((ms, i) => {
+                    const barTop     = Math.round((ROW_H - 14) / 2)   // matches h-3.5 bar
+                    const diamondS   = 18
+                    const diamondTop = barTop + 7 - diamondS / 2       // centred on bar
+                    return (
                       <div
-                        className={`absolute h-3 w-3 rotate-45 shrink-0 cursor-pointer hover:scale-125 transition-transform ${
-                          ms.status === "completed"
-                            ? "bg-primary"
-                            : "bg-card border-2 border-gray-400"
-                        }`}
-                        style={{ top: 4, transform: "translateX(-50%)" }}
-                        onClick={e => { e.stopPropagation(); setActiveMilestone({ ms, projectName: project.name }) }}
-                      />
-                      {/* Label — below the diamond, above the bar */}
-                      {ms.label && (
-                        <span
-                          className="absolute text-[8px] text-muted-foreground text-center leading-tight whitespace-nowrap"
-                          style={{ top: 19, transform: "translateX(-50%)", maxWidth: 60 }}
-                        >
-                          {ms.label}
-                        </span>
-                      )}
-                    </div>
-                  ))}
+                        key={i}
+                        className="absolute z-10"
+                        style={{ left: `${ms.position * 100}%`, top: 0, height: ROW_H }}
+                      >
+                        {/* Label — above the diamond */}
+                        {ms.label && (
+                          <span
+                            className="absolute text-[9px] font-semibold text-foreground/80 leading-tight whitespace-nowrap"
+                            style={{
+                              top: diamondTop - 14,
+                              transform: "translateX(-50%)",
+                              maxWidth: 80,
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                            }}
+                          >
+                            {ms.label}
+                          </span>
+                        )}
+                        {/* Diamond */}
+                        <div
+                          className={`absolute cursor-pointer hover:scale-125 transition-transform ${
+                            ms.status === "completed"
+                              ? "bg-primary"
+                              : "bg-card border-2 border-gray-400"
+                          }`}
+                          style={{
+                            width:  diamondS,
+                            height: diamondS,
+                            top:    diamondTop,
+                            transform: "translateX(-50%) rotate(45deg)",
+                          }}
+                          onClick={e => { e.stopPropagation(); setActiveMilestone({ ms, projectName: project.name }) }}
+                        />
+                      </div>
+                    )
+                  })}
                 </div>
               )})}
             </div>
@@ -282,12 +298,12 @@ export function GanttChart() {
         </div>
         <div className="flex flex-wrap items-center justify-end gap-x-5 gap-y-1.5">
           <div className="flex items-center gap-1.5">
-            <div className="h-3 w-3 rotate-45 bg-primary shrink-0" />
+            <div className="h-3.5 w-3.5 rotate-45 bg-primary shrink-0" />
             <span>Milestone completed</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <div className="h-3 w-3 rotate-45 bg-card border-2 border-gray-400 shrink-0" />
-            <span>Milestone pending</span>
+            <div className="h-3.5 w-3.5 rotate-45 bg-card border-2 border-gray-400 shrink-0" />
+            <span>Milestone not started</span>
           </div>
           <div className="flex items-center gap-1.5">
             <div className="h-2 w-10 rounded-full bg-gray-500" />
