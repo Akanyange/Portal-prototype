@@ -132,7 +132,7 @@ export function CompletedMonthlyChart() {
                 {/* Invisible hit area */}
                 <rect x={x} y={0} width={BAR_W} height={SVG_H} fill="transparent" />
                 <rect
-                  x={x} y={y} width={BAR_W} height={barH} rx={2.5}
+                  x={x} y={y} width={BAR_W} height={barH} rx={0}
                   fill={isActive ? "#E20074" : "#10b981"}
                   opacity={opacity}
                 />

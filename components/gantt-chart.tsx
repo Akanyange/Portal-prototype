@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { projects, STATUS_DOT, STATUS_LABEL, type TaskStatus, type GanttMilestone } from "@/lib/projects-data"
 import { useRole } from "@/lib/role-context"
 import { MilestoneViewModal } from "@/components/milestone-view-modal"
+import { MilestoneModal, type MilestoneData } from "@/components/milestone-modal"
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -19,6 +20,7 @@ function getCurrentYearFraction(): number {
 }
 
 const ORDINAL_MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"]
+const MONTHS_SHORT   = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
 
 function positionToDateStr(position: number): string {
   const d = new Date(2026, 0, 1 + Math.round(position * 365))
@@ -28,6 +30,11 @@ function positionToDateStr(position: number): string {
     : day % 10 === 2 ? "nd"
     : day % 10 === 3 ? "rd" : "th"
   return `${day}${suffix} ${ORDINAL_MONTHS[d.getMonth()]} ${d.getFullYear()}`
+}
+
+function fractionToShortDate(fraction: number): string {
+  const d = new Date(2026, 0, 1 + Math.round(fraction * 365))
+  return `${String(d.getDate()).padStart(2, "0")}-${MONTHS_SHORT[d.getMonth()]}`
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -49,9 +56,53 @@ const TASK_BAR: Record<TaskStatus, string> = {
 export function GanttChart() {
   const router = useRouter()
   const { role } = useRole()
-  const [expanded, setExpanded] = useState<Set<string>>(new Set())
+  const [expanded,      setExpanded]      = useState<Set<string>>(new Set())
   const [todayFraction, setTodayFraction] = useState<number | null>(null)
-  const [activeMilestone, setActiveMilestone] = useState<{ ms: GanttMilestone; projectName: string } | null>(null)
+  const [hoverFraction, setHoverFraction] = useState<number | null>(null)
+  const [activeMilestone,  setActiveMilestone]  = useState<{ ms: GanttMilestone; projectId: string; msIdx: number } | null>(null)
+  const [editingMilestone, setEditingMilestone] = useState<{ ms: GanttMilestone; projectId: string; msIdx: number } | null>(null)
+  const [msOverrides, setMsOverrides] = useState<Record<string, Partial<GanttMilestone>>>({})
+
+  function getMilestone(projectId: string, msIdx: number, ms: GanttMilestone): GanttMilestone {
+    const ov = msOverrides[`${projectId}-${msIdx}`]
+    return ov ? { ...ms, ...ov } : ms
+  }
+
+  function msToModalData(ms: GanttMilestone): MilestoneData {
+    const STATUS_MAP: Record<string, MilestoneData["status"]> = {
+      "completed":   "Completed",
+      "not-started": "Not Started",
+      "in-progress": "In Progress",
+    }
+    const isoDate = (() => {
+      const d = new Date(2026, 0, 1 + Math.round(ms.position * 365))
+      return d.toISOString().slice(0, 10)
+    })()
+    return {
+      id:          "",
+      label:       ms.label,
+      description: ms.description ?? "",
+      startDate:   isoDate,
+      endDate:     isoDate,
+      status:      STATUS_MAP[ms.status] ?? "Not Started",
+    }
+  }
+
+  function handleMsModalSave(data: MilestoneData) {
+    if (!editingMilestone) return
+    const STATUS_MAP: Record<string, GanttMilestone["status"]> = {
+      "Completed":   "completed",
+      "Not Started": "not-started",
+      "In Progress": "not-started",
+      "At Risk":     "not-started",
+    }
+    const key = `${editingMilestone.projectId}-${editingMilestone.msIdx}`
+    setMsOverrides(prev => ({
+      ...prev,
+      [key]: { label: data.label, description: data.description, status: STATUS_MAP[data.status] },
+    }))
+    setEditingMilestone(null)
+  }
 
   const visibleProjects = role === "General User"
     ? projects.filter(p => p.visibility === "Public")
@@ -175,7 +226,14 @@ export function GanttChart() {
             </div>
 
             {/* Timeline rows */}
-            <div className="relative">
+            <div
+              className="relative"
+              onMouseMove={e => {
+                const rect = e.currentTarget.getBoundingClientRect()
+                setHoverFraction((e.clientX - rect.left) / rect.width)
+              }}
+              onMouseLeave={() => setHoverFraction(null)}
+            >
               {/* Vertical month grid lines */}
               {Array.from({ length: 11 }).map((_, i) => (
                 <div
@@ -185,12 +243,27 @@ export function GanttChart() {
                 />
               ))}
 
-              {/* Today line — only rendered client-side to avoid hydration mismatch */}
+              {/* Today line */}
               {todayFraction !== null && (
                 <div
                   className="absolute top-0 bottom-0 w-[1.5px] bg-primary/70 z-20 pointer-events-none"
                   style={{ left: `${todayFraction * 100}%` }}
                 />
+              )}
+
+              {/* Hover date line */}
+              {hoverFraction !== null && (
+                <div
+                  className="absolute top-0 bottom-0 w-px bg-primary/40 z-20 pointer-events-none"
+                  style={{ left: `${hoverFraction * 100}%` }}
+                >
+                  <span
+                    className="absolute top-0 left-1.5 text-[9px] font-medium text-foreground/70 bg-card border border-border rounded px-1 py-0.5 whitespace-nowrap leading-none shadow-sm"
+                    style={{ top: 2 }}
+                  >
+                    {fractionToShortDate(hoverFraction)}
+                  </span>
+                </div>
               )}
 
               {visibleProjects.map(project => {
@@ -202,10 +275,14 @@ export function GanttChart() {
                   className="relative border-b bg-card"
                   style={{ height: totalH }}
                 >
-                  {/* ── Task bars: label above + thin bar ─────────────────── */}
+                  {/* ── Task bars ─────────────────────────────────────────── */}
                   {project.tasks.map((task, i) => {
-                    const leftPct  = task.start * 100
-                    const widthPct = (task.end - task.start) * 100
+                    const leftPct    = task.start * 100
+                    const widthPct   = (task.end - task.start) * 100
+                    // Planned project → all bars look "not-started"
+                    const barClass   = project.status === "planned"
+                      ? TASK_BAR["not-started"]
+                      : TASK_BAR[task.status]
                     return (
                       <div
                         key={i}
@@ -219,7 +296,7 @@ export function GanttChart() {
                       >
                         {/* Bar */}
                         <div
-                          className={`absolute left-0 right-0 h-3.5 rounded-full ${TASK_BAR[task.status]}`}
+                          className={`absolute left-0 right-0 h-3.5 rounded-full ${barClass}`}
                           style={{ top: Math.round((ROW_H - 14) / 2) }}
                         />
                       </div>
@@ -227,10 +304,13 @@ export function GanttChart() {
                   })}
 
                   {/* ── Milestones: label above diamond, centred on bar ───── */}
-                  {project.milestones.map((ms, i) => {
-                    const barTop     = Math.round((ROW_H - 14) / 2)   // matches h-3.5 bar
+                  {project.milestones.map((rawMs, i) => {
+                    const ms         = getMilestone(project.id, i, rawMs)
+                    const barTop     = Math.round((ROW_H - 14) / 2)
                     const diamondS   = 18
-                    const diamondTop = barTop + 7 - diamondS / 2       // centred on bar
+                    const diamondTop = barTop + 7 - diamondS / 2
+                    // Planned project → all diamonds hollow
+                    const effectiveStatus = project.status === "planned" ? "not-started" : ms.status
                     return (
                       <div
                         key={i}
@@ -255,7 +335,7 @@ export function GanttChart() {
                         {/* Diamond */}
                         <div
                           className={`absolute cursor-pointer hover:scale-125 transition-transform ${
-                            ms.status === "completed"
+                            effectiveStatus === "completed"
                               ? "bg-primary"
                               : "bg-card border-2 border-gray-400"
                           }`}
@@ -265,7 +345,7 @@ export function GanttChart() {
                             top:    diamondTop,
                             transform: "translateX(-50%) rotate(45deg)",
                           }}
-                          onClick={e => { e.stopPropagation(); setActiveMilestone({ ms, projectName: project.name }) }}
+                          onClick={e => { e.stopPropagation(); setActiveMilestone({ ms, projectId: project.id, msIdx: i }) }}
                         />
                       </div>
                     )
@@ -278,7 +358,7 @@ export function GanttChart() {
       </div>
 
       {/* ── Milestone view modal ────────────────────────────────────────────── */}
-      {activeMilestone && (
+      {activeMilestone && !editingMilestone && (
         <MilestoneViewModal
           title={activeMilestone.ms.label}
           status={activeMilestone.ms.status}
@@ -287,6 +367,16 @@ export function GanttChart() {
           updatedAt={activeMilestone.ms.updatedAt}
           canEdit={role !== "General User"}
           onClose={() => setActiveMilestone(null)}
+          onEditClick={() => setEditingMilestone(activeMilestone)}
+        />
+      )}
+
+      {/* ── Milestone edit modal ─────────────────────────────────────────────── */}
+      {editingMilestone && (
+        <MilestoneModal
+          initial={msToModalData(editingMilestone.ms)}
+          onClose={() => setEditingMilestone(null)}
+          onSave={handleMsModalSave}
         />
       )}
 

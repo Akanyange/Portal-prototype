@@ -5,6 +5,8 @@ import { usePathname } from "next/navigation"
 import { useRef, useEffect, useState } from "react"
 import { Bell, User, ChevronDown, Check } from "lucide-react"
 import { useRole, type AppRole } from "@/lib/role-context"
+import { NotificationsPanel } from "@/components/notifications-panel"
+import { NOTIFICATIONS } from "@/lib/notifications-data"
 
 const ALL_NAV = [
   { href: "/",                  label: "Overview",             roles: ["Admin", "Project Manager", "General User"] },
@@ -22,15 +24,18 @@ const ROLE_META: Record<AppRole, { description: string }> = {
 export function Header() {
   const pathname   = usePathname()
   const { role, setRole } = useRole()
-  const [open, setOpen]   = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
+  const [roleOpen,  setRoleOpen]  = useState(false)
+  const [notifOpen, setNotifOpen] = useState(false)
+  const roleRef  = useRef<HTMLDivElement>(null)
+  const notifRef = useRef<HTMLDivElement>(null)
 
   const nav = ALL_NAV.filter(n => n.roles.includes(role))
+  const unreadCount = NOTIFICATIONS.filter(n => !n.read).length
 
-  // Close on outside click
+  // Close role dropdown on outside click
   useEffect(() => {
     function handler(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+      if (roleRef.current && !roleRef.current.contains(e.target as Node)) setRoleOpen(false)
     }
     document.addEventListener("mousedown", handler)
     return () => document.removeEventListener("mousedown", handler)
@@ -38,7 +43,7 @@ export function Header() {
 
   function switchRole(r: AppRole) {
     setRole(r)
-    setOpen(false)
+    setRoleOpen(false)
   }
 
   return (
@@ -79,27 +84,40 @@ export function Header() {
         {/* Right side */}
         <div className="ml-auto flex items-center gap-2">
 
-          {/* Notifications */}
-          <button className="relative h-9 w-9 flex items-center justify-center rounded-full hover:bg-muted transition-colors">
-            <Bell className="h-4.5 w-4.5 text-muted-foreground" />
-            <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-primary border-2 border-background" />
-          </button>
+          {/* Notifications bell */}
+          <div className="relative" ref={notifRef}>
+            <button
+              onClick={() => setNotifOpen(o => !o)}
+              className="relative h-9 w-9 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
+            >
+              <Bell className="h-4.5 w-4.5 text-muted-foreground" />
+              {unreadCount > 0 && (
+                <span className="absolute top-1 right-1 min-w-4 h-4 flex items-center justify-center rounded-full bg-primary text-[9px] font-bold text-white px-0.5 border-2 border-background leading-none">
+                  {unreadCount}
+                </span>
+              )}
+            </button>
+
+            {notifOpen && (
+              <NotificationsPanel onClose={() => setNotifOpen(false)} />
+            )}
+          </div>
 
           {/* Profile + role switcher */}
-          <div className="relative" ref={ref}>
+          <div className="relative" ref={roleRef}>
             <button
-              onClick={() => setOpen(o => !o)}
+              onClick={() => setRoleOpen(o => !o)}
               className="flex items-center gap-2 pl-1 pr-2 py-1 rounded-full hover:bg-muted transition-colors"
             >
               <div className="h-8 w-8 rounded-full bg-primary/15 flex items-center justify-center">
                 <User className="h-4 w-4 text-primary" />
               </div>
               <span className="text-sm font-medium">{role}</span>
-              <ChevronDown className={`h-3.5 w-3.5 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`} />
+              <ChevronDown className={`h-3.5 w-3.5 text-muted-foreground transition-transform ${roleOpen ? "rotate-180" : ""}`} />
             </button>
 
             {/* Dropdown */}
-            {open && (
+            {roleOpen && (
               <div className="absolute right-0 top-full mt-1.5 w-64 rounded-xl border border-border bg-card shadow-xl z-50 overflow-hidden">
                 <div className="px-4 py-3 border-b border-border">
                   <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Switch role</p>

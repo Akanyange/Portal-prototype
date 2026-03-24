@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import type { MilestoneRow, MilestoneMarker, ProjectStatus } from "@/lib/projects-data"
 import { STATUS_LABEL, STATUS_BADGE } from "@/lib/projects-data"
 import { MilestoneViewModal } from "@/components/milestone-view-modal"
+import { MilestoneModal, type MilestoneData } from "@/components/milestone-modal"
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -51,6 +52,12 @@ function weekStartDate(i: number): Date {
 }
 
 function formatWeek(d: Date): string {
+  return `${String(d.getDate()).padStart(2, "0")}-${MONTHS_SHORT[d.getMonth()]}`
+}
+
+function pxToShortDate(px: number, cfg: ViewConfig): string {
+  const days = (px / cfg.colW) * cfg.daysPerCol
+  const d = new Date(GANTT_START.getTime() + days * 24 * 60 * 60 * 1000)
   return `${String(d.getDate()).padStart(2, "0")}-${MONTHS_SHORT[d.getMonth()]}`
 }
 
@@ -103,8 +110,47 @@ interface Props {
 }
 
 export function MilestoneGantt({ projectName, projectStatus, milestoneRows, timeView, canEdit }: Props) {
-  const [todayPx, setTodayPx] = useState<number | null>(null)
-  const [activeMarker, setActiveMarker] = useState<{ marker: MilestoneMarker; rowName: string } | null>(null)
+  const [todayPx,  setTodayPx]  = useState<number | null>(null)
+  const [hoverPx,  setHoverPx]  = useState<number | null>(null)
+  const [activeMarker,  setActiveMarker]  = useState<{ marker: MilestoneMarker; rowIdx: number; mkIdx: number; rowName: string } | null>(null)
+  const [editingMarker, setEditingMarker] = useState<{ marker: MilestoneMarker; rowIdx: number; mkIdx: number; rowName: string } | null>(null)
+  const [markerOverrides, setMarkerOverrides] = useState<Record<string, Partial<MilestoneMarker>>>({})
+
+  function getMarker(rowIdx: number, mkIdx: number, mk: MilestoneMarker): MilestoneMarker {
+    const ov = markerOverrides[`${rowIdx}-${mkIdx}`]
+    return ov ? { ...mk, ...ov } : mk
+  }
+
+  function markerToModalData(mk: MilestoneMarker, rowName: string): MilestoneData {
+    const STATUS_MAP: Record<string, MilestoneData["status"]> = {
+      "completed":   "Completed",
+      "not-started": "Not Started",
+    }
+    return {
+      id:          "",
+      label:       rowName,
+      description: mk.description ?? "",
+      startDate:   mk.date,
+      endDate:     mk.date,
+      status:      STATUS_MAP[mk.status] ?? "Not Started",
+    }
+  }
+
+  function handleMarkerModalSave(data: MilestoneData) {
+    if (!editingMarker) return
+    const STATUS_MAP: Record<string, MilestoneMarker["status"]> = {
+      "Completed":   "completed",
+      "Not Started": "not-started",
+      "In Progress": "not-started",
+      "At Risk":     "not-started",
+    }
+    const key = `${editingMarker.rowIdx}-${editingMarker.mkIdx}`
+    setMarkerOverrides(prev => ({
+      ...prev,
+      [key]: { description: data.description, status: STATUS_MAP[data.status] },
+    }))
+    setEditingMarker(null)
+  }
 
   const cfg        = getViewConfig(timeView)
   const totalWidth = cfg.totalCols * cfg.colW
@@ -171,7 +217,14 @@ export function MilestoneGantt({ projectName, projectStatus, milestoneRows, time
             </div>
 
             {/* Timeline rows */}
-            <div className="relative">
+            <div
+              className="relative"
+              onMouseMove={e => {
+                const rect = e.currentTarget.getBoundingClientRect()
+                setHoverPx(e.clientX - rect.left)
+              }}
+              onMouseLeave={() => setHoverPx(null)}
+            >
 
               {/* Vertical grid lines */}
               {Array.from({ length: cfg.totalCols - 1 }, (_, i) => (
@@ -188,6 +241,20 @@ export function MilestoneGantt({ projectName, projectStatus, milestoneRows, time
                   className="absolute top-0 bottom-0 w-[1.5px] bg-primary/70 z-20 pointer-events-none"
                   style={{ left: todayPx }}
                 />
+              )}
+
+              {/* Hover date line */}
+              {hoverPx !== null && hoverPx >= 0 && hoverPx <= totalWidth && (
+                <div
+                  className="absolute top-0 bottom-0 w-px bg-primary/40 z-20 pointer-events-none"
+                  style={{ left: hoverPx }}
+                >
+                  <span
+                    className="absolute top-0.5 left-1.5 text-[9px] font-medium text-foreground/70 bg-card border border-border rounded px-1 py-0.5 whitespace-nowrap leading-none shadow-sm"
+                  >
+                    {pxToShortDate(hoverPx, cfg)}
+                  </span>
+                </div>
               )}
 
               {milestoneRows.map((row, ri) => (
@@ -224,10 +291,10 @@ export function MilestoneGantt({ projectName, projectStatus, milestoneRows, time
                   })}
 
                   {/* Diamond markers */}
-                  {row.markers.map((mk, mi) => {
+                  {row.markers.map((rawMk, mi) => {
+                    const mk     = getMarker(ri, mi, rawMk)
                     const x      = dateToPx(mk.date, cfg)
                     const barTop = Math.round((ROW_H - BAR_H) / 2) + 4
-                    // centre diamond on bar
                     const diamondTop = barTop + BAR_H / 2 - DIAMOND_S / 2
                     return (
                       <div
@@ -261,7 +328,7 @@ export function MilestoneGantt({ projectName, projectStatus, milestoneRows, time
                             top:    diamondTop,
                             transform: "translateX(-50%) rotate(45deg)",
                           }}
-                          onClick={e => { e.stopPropagation(); setActiveMarker({ marker: mk, rowName: row.name }) }}
+                          onClick={e => { e.stopPropagation(); setActiveMarker({ marker: mk, rowIdx: ri, mkIdx: mi, rowName: row.name }) }}
                         />
                       </div>
                     )
@@ -274,7 +341,7 @@ export function MilestoneGantt({ projectName, projectStatus, milestoneRows, time
       </div>
 
       {/* ── Marker view modal ─────────────────────────────────────────────────── */}
-      {activeMarker && (
+      {activeMarker && !editingMarker && (
         <MilestoneViewModal
           title={activeMarker.rowName}
           status={activeMarker.marker.status}
@@ -283,6 +350,16 @@ export function MilestoneGantt({ projectName, projectStatus, milestoneRows, time
           updatedAt={activeMarker.marker.updatedAt}
           canEdit={canEdit}
           onClose={() => setActiveMarker(null)}
+          onEditClick={() => setEditingMarker(activeMarker)}
+        />
+      )}
+
+      {/* ── Marker edit modal ─────────────────────────────────────────────────── */}
+      {editingMarker && (
+        <MilestoneModal
+          initial={markerToModalData(editingMarker.marker, editingMarker.rowName)}
+          onClose={() => setEditingMarker(null)}
+          onSave={handleMarkerModalSave}
         />
       )}
 
