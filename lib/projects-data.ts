@@ -62,6 +62,7 @@ export interface Project {
   links?: string[]
   description?: string
   milestoneRows?: MilestoneRow[]
+  nextUpdateDue?: string   // "YYYY-MM-DD" — when the next status update is due
 }
 
 /** month 1–12, day 1–31 → 0–1 year fraction */
@@ -213,6 +214,7 @@ export const projects: Project[] = [
     links: ["https://www.atlassian.com/software/confluence"],
     description:
       "This project aims to design and implement a scalable digital solution that addresses a clearly identified user and business need. It begins with research and requirement gathering to understand target users, stakeholder expectations, and technical constraints. Insights from this phase inform concept development, information architecture, and experience design. The project follows an iterative approach, including prototyping, validation, development, and continuous feedback loops to ensure usability, performance, and alignment with defined success metrics.",
+    nextUpdateDue: "2026-04-02",
     milestoneRows: [
       {
         id: "ms1",
