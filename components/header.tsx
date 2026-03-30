@@ -84,8 +84,8 @@ export function Header() {
         {/* Right side */}
         <div className="ml-auto flex items-center gap-2">
 
-          {/* Notifications bell */}
-          <div className="relative" ref={notifRef}>
+          {/* Notifications bell — Admin & Project Manager only */}
+          {role !== "General User" && <div className="relative" ref={notifRef}>
             <button
               onClick={() => setNotifOpen(o => !o)}
               className="relative h-9 w-9 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
@@ -101,7 +101,7 @@ export function Header() {
             {notifOpen && (
               <NotificationsPanel onClose={() => setNotifOpen(false)} />
             )}
-          </div>
+          </div>}
 
           {/* Profile + role switcher */}
           <div className="relative" ref={roleRef}>

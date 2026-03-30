@@ -40,7 +40,9 @@ export default function ProjectDetailPage() {
     due.setHours(0, 0, 0, 0)
     return Math.round((due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
   })()
-  const showUpdateBanner = daysUntilUpdate !== null && daysUntilUpdate >= 0 && daysUntilUpdate <= 3
+  const showUpdateBanner =
+    (role === "Admin" || role === "Project Manager") &&
+    daysUntilUpdate !== null && daysUntilUpdate >= 0 && daysUntilUpdate <= 3
 
   if (!project) {
     return (
