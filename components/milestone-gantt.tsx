@@ -137,6 +137,15 @@ export function MilestoneGantt({ projectName, projectStatus, milestoneRows, time
       "completed":   "Completed",
       "not-started": "Planned",
     }
+    // Session entries (new changes this visit) + original seeded history from data
+    const sessionEntries = rowHistories[rowIdx] ?? []
+    const seededEntries  = milestoneRows[rowIdx]?.statusHistory ?? []
+    // Combine without duplicating: session entries are prepended on save, so merge unique
+    const seenKeys = new Set(sessionEntries.map(e => `${e.status}-${e.updatedAt}`))
+    const combined  = [
+      ...sessionEntries,
+      ...seededEntries.filter(e => !seenKeys.has(`${e.status}-${e.updatedAt}`)),
+    ]
     return {
       id:            "",
       label:         rowName,
@@ -144,7 +153,7 @@ export function MilestoneGantt({ projectName, projectStatus, milestoneRows, time
       startDate:     mk.date,
       endDate:       mk.date,
       status:        STATUS_MAP[mk.status] ?? "Planned",
-      statusHistory: rowHistories[rowIdx] ?? [],
+      statusHistory: combined,
     }
   }
 
