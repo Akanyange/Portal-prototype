@@ -1,10 +1,11 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import type { MilestoneRow, MilestoneMarker, ProjectStatus } from "@/lib/projects-data"
+import type { MilestoneRow, MilestoneMarker, ProjectStatus, StatusTrailEntry } from "@/lib/projects-data"
 import { STATUS_LABEL, STATUS_BADGE } from "@/lib/projects-data"
 import { MilestoneViewModal } from "@/components/milestone-view-modal"
 import { MilestoneModal, type MilestoneData } from "@/components/milestone-modal"
+import { useRole } from "@/lib/role-context"
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -110,44 +111,71 @@ interface Props {
 }
 
 export function MilestoneGantt({ projectName, projectStatus, milestoneRows, timeView, canEdit }: Props) {
+  const { role } = useRole()
+  const currentUser = role === "Admin" ? "Alycia Smith" : role === "Project Manager" ? "John Manager" : "Guest"
+
   const [todayPx,  setTodayPx]  = useState<number | null>(null)
   const [hoverPx,  setHoverPx]  = useState<number | null>(null)
   const [activeMarker,  setActiveMarker]  = useState<{ marker: MilestoneMarker; rowIdx: number; mkIdx: number; rowName: string } | null>(null)
   const [editingMarker, setEditingMarker] = useState<{ marker: MilestoneMarker; rowIdx: number; mkIdx: number; rowName: string } | null>(null)
   const [markerOverrides, setMarkerOverrides] = useState<Record<string, Partial<MilestoneMarker>>>({})
+  const [rowHistories, setRowHistories] = useState<Record<number, StatusTrailEntry[]>>(() => {
+    const init: Record<number, StatusTrailEntry[]> = {}
+    milestoneRows.forEach((row, i) => {
+      if (row.statusHistory?.length) init[i] = row.statusHistory
+    })
+    return init
+  })
 
   function getMarker(rowIdx: number, mkIdx: number, mk: MilestoneMarker): MilestoneMarker {
     const ov = markerOverrides[`${rowIdx}-${mkIdx}`]
     return ov ? { ...mk, ...ov } : mk
   }
 
-  function markerToModalData(mk: MilestoneMarker, rowName: string): MilestoneData {
+  function markerToModalData(mk: MilestoneMarker, rowName: string, rowIdx: number): MilestoneData {
     const STATUS_MAP: Record<string, MilestoneData["status"]> = {
       "completed":   "Completed",
-      "not-started": "Not Started",
+      "not-started": "Planned",
     }
     return {
-      id:          "",
-      label:       rowName,
-      description: mk.description ?? "",
-      startDate:   mk.date,
-      endDate:     mk.date,
-      status:      STATUS_MAP[mk.status] ?? "Not Started",
+      id:            "",
+      label:         rowName,
+      description:   mk.description ?? "",
+      startDate:     mk.date,
+      endDate:       mk.date,
+      status:        STATUS_MAP[mk.status] ?? "Planned",
+      statusHistory: rowHistories[rowIdx] ?? [],
     }
   }
 
   function handleMarkerModalSave(data: MilestoneData) {
     if (!editingMarker) return
     const STATUS_MAP: Record<string, MilestoneMarker["status"]> = {
-      "Completed":   "completed",
-      "Not Started": "not-started",
-      "In Progress": "not-started",
-      "At Risk":     "not-started",
+      "Completed": "completed",
+      "Planned":   "not-started",
+      "Ongoing":   "not-started",
     }
-    const key = `${editingMarker.rowIdx}-${editingMarker.mkIdx}`
+    const { rowIdx, mkIdx } = editingMarker
+    const key = `${rowIdx}-${mkIdx}`
+
+    // Record trail entry if status changed
+    const prevMkStatus = editingMarker.marker.status
+    const newMkStatus  = STATUS_MAP[data.status]
+    if (newMkStatus !== prevMkStatus) {
+      const entry: StatusTrailEntry = {
+        status:    data.status.toLowerCase() as StatusTrailEntry["status"],
+        updatedAt: new Date().toISOString(),
+        updatedBy: currentUser,
+      }
+      setRowHistories(prev => ({
+        ...prev,
+        [rowIdx]: [entry, ...(prev[rowIdx] ?? [])],
+      }))
+    }
+
     setMarkerOverrides(prev => ({
       ...prev,
-      [key]: { description: data.description, status: STATUS_MAP[data.status] },
+      [key]: { description: data.description, status: newMkStatus },
     }))
     setEditingMarker(null)
   }
@@ -190,10 +218,11 @@ export function MilestoneGantt({ projectName, projectStatus, milestoneRows, time
                 <span className="text-[10px] text-muted-foreground whitespace-nowrap">Due: {row.dueDate}</span>
               </div>
               <div className="flex items-center gap-1 mt-1">
-                <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${row.status === "on-track" ? "bg-emerald-500" : "bg-orange-500"}`} />
-                <span className="text-xs text-muted-foreground">
-                  {row.status === "on-track" ? "On Track" : "At Risk"}
-                </span>
+                <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${
+                  row.status === "completed" ? "bg-emerald-500" :
+                  row.status === "ongoing"   ? "bg-amber-500"   : "bg-blue-500"
+                }`} />
+                <span className="text-xs text-muted-foreground capitalize">{row.status}</span>
               </div>
             </div>
           ))}
@@ -357,7 +386,7 @@ export function MilestoneGantt({ projectName, projectStatus, milestoneRows, time
       {/* ── Marker edit modal ─────────────────────────────────────────────────── */}
       {editingMarker && (
         <MilestoneModal
-          initial={markerToModalData(editingMarker.marker, editingMarker.rowName)}
+          initial={markerToModalData(editingMarker.marker, editingMarker.rowName, editingMarker.rowIdx)}
           onClose={() => setEditingMarker(null)}
           onSave={handleMarkerModalSave}
         />

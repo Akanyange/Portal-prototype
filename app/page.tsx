@@ -1,7 +1,11 @@
+"use client"
+
+import { useState } from "react"
 import { LayoutList } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { GanttChart } from "@/components/gantt-chart"
 import { ProjectFilters } from "@/components/project-filters"
+import { ProjectsTable } from "@/components/projects-table"
 import { StatusPieChart } from "@/components/status-pie-chart"
 import { CompletedMonthlyChart } from "@/components/completed-monthly-chart"
 
@@ -18,10 +22,13 @@ const PIE_SLICES = [
   { label: "Completed", count: COMPLETED, color: "#10b981" },
 ]
 
+type View = "list" | "timeline"
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function OverviewPage() {
+  const [activeView, setActiveView] = useState<View>("list")
+
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between">
@@ -46,7 +53,7 @@ export default function OverviewPage() {
             </div>
             <span className="text-[12px] font-medium text-emerald-400">+5% vs last month</span>
           </div>
-          <div className="px-4 pb-3 pt-1 flex items-center">
+          <div className="px-4 pb-3 pt-1 flex items-center overflow-visible">
             <StatusPieChart slices={PIE_SLICES} total={TOTAL} compact />
           </div>
         </Card>
@@ -55,9 +62,12 @@ export default function OverviewPage() {
         <CompletedMonthlyChart />
       </div>
 
-      {/* ── Project / Timeline section ────────────────────────────────────── */}
-      <ProjectFilters />
-      <GanttChart />
+      {/* ── Projects List / Timeline section ──────────────────────────────── */}
+      <ProjectFilters activeView={activeView} onViewChange={setActiveView} />
+      {activeView === "list"
+        ? <ProjectsTable defaultTribe="AI for Networks" hideHeader />
+        : <GanttChart />
+      }
     </div>
   )
 }

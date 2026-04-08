@@ -71,8 +71,8 @@ export function GanttChart() {
   function msToModalData(ms: GanttMilestone): MilestoneData {
     const STATUS_MAP: Record<string, MilestoneData["status"]> = {
       "completed":   "Completed",
-      "not-started": "Not Started",
-      "in-progress": "In Progress",
+      "not-started": "Planned",
+      "in-progress": "Ongoing",
     }
     const isoDate = (() => {
       const d = new Date(2026, 0, 1 + Math.round(ms.position * 365))

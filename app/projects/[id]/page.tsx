@@ -94,7 +94,7 @@ export default function ProjectDetailPage() {
             </p>
           </div>
           <Link
-            href={`/projects/${project.id}/edit`}
+            href={`/projects/${project.id}/milestones`}
             className="shrink-0 rounded-full bg-amber-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-amber-700 transition-colors"
           >
             Update

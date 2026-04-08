@@ -29,10 +29,9 @@ const PES = [
 ]
 
 const STATUS_COLORS: Record<MilestoneData["status"], string> = {
-  "Not Started": "bg-muted text-muted-foreground",
-  "In Progress":  "bg-blue-500/20 text-blue-400",
-  "Completed":    "bg-emerald-500/20 text-emerald-400",
-  "At Risk":      "bg-orange-500/20 text-orange-400",
+  "Planned":   "bg-blue-500/20 text-blue-400",
+  "Ongoing":   "bg-amber-500/20 text-amber-400",
+  "Completed": "bg-emerald-500/20 text-emerald-400",
 }
 
 // ── Accordion section ──────────────────────────────────────────────────────────

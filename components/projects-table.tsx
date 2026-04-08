@@ -47,11 +47,17 @@ import {
   MoreHorizontal,
   Search,
   Trash2,
+  Milestone,
 } from "lucide-react"
 
 const PER_PAGE_OPTIONS = [10, 20, 50]
 
-export function ProjectsTable() {
+interface ProjectsTableProps {
+  defaultTribe?: string
+  hideHeader?: boolean
+}
+
+export function ProjectsTable({ defaultTribe = "", hideHeader = false }: ProjectsTableProps) {
   const router = useRouter()
   const { role } = useRole()
   const [currentPage, setCurrentPage] = useState(1)
@@ -64,7 +70,7 @@ export function ProjectsTable() {
     projectName: string
   } | null>(null)
   const [filterPE,     setFilterPE]     = useState<string>("")
-  const [filterTribe,  setFilterTribe]  = useState<string>("")
+  const [filterTribe,  setFilterTribe]  = useState<string>(defaultTribe)
   const [filterStatus, setFilterStatus] = useState<string>("")
 
   const roleFiltered = role === "General User"
@@ -112,7 +118,7 @@ export function ProjectsTable() {
     <div className="rounded-lg border bg-card shadow-sm">
 
       {/* ── Header bar ────────────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between px-4 py-3 border-b gap-3 flex-wrap">
+      {!hideHeader && <div className="flex items-center justify-between px-4 py-3 border-b gap-3 flex-wrap">
         <span className="font-semibold text-sm">Projects List</span>
 
         <div className="flex items-center gap-2 flex-wrap">
@@ -183,7 +189,7 @@ export function ProjectsTable() {
             <Search className="h-4 w-4 text-muted-foreground shrink-0" />
           </div>
         </div>
-      </div>
+      </div>}
 
       {/* ── Table ─────────────────────────────────────────────────────────── */}
       <div className="overflow-x-auto">
@@ -280,6 +286,9 @@ export function ProjectsTable() {
                       <DropdownMenuContent align="end" className="w-44">
                         <DropdownMenuItem onClick={() => router.push(`/projects/${project.id}/edit`)}>
                           <Edit className="h-3.5 w-3.5 mr-2" /> Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => router.push(`/projects/${project.id}/milestones`)}>
+                          <Milestone className="h-3.5 w-3.5 mr-2" /> View Milestones
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem onClick={() => setConfirmAction({ type: "archive", projectId: project.id, projectName: project.name })}>

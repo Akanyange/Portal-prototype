@@ -42,11 +42,13 @@ function mapStatus(jiraStatusCategory: string): TaskStatus {
 }
 
 /** Maps JIRA sprint state to MilestoneRow status */
-function mapMilestoneStatus(dueDate: string): "on-track" | "at-risk" {
+function mapMilestoneStatus(dueDate: string): "planned" | "ongoing" | "completed" {
   const due  = new Date(dueDate)
   const now  = new Date()
   const daysLeft = (due.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
-  return daysLeft < 14 && daysLeft > 0 ? "at-risk" : "on-track"
+  if (daysLeft < 0)  return "completed"
+  if (daysLeft < 14) return "ongoing"
+  return "planned"
 }
 
 // ── Mock JIRA data (keyed by projectKey) ─────────────────────────────────────

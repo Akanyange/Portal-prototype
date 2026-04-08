@@ -14,9 +14,9 @@ const SW_FULL = 15
 const C_FULL  = 55
 
 // ── Compact dimensions ───────────────────────────────────────────────────────
-const R_SM  = 32
-const SW_SM = 10
-const C_SM  = 40
+const R_SM  = 46
+const SW_SM = 14
+const C_SM  = 58
 
 interface Props {
   slices: Slice[]
@@ -46,7 +46,7 @@ export function StatusPieChart({ slices, total, compact = false }: Props) {
 
   if (compact) {
     return (
-      <div className="flex items-center gap-7">
+      <div className="flex items-center gap-14">
         {/* Donut — no centre text, matches reference */}
         <svg
           width={CX * 2} height={CY * 2}

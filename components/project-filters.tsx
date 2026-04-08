@@ -12,6 +12,7 @@ import {
 
 const PE_OPTIONS    = ["AI Network Foundations", "Service Observability", "Use case for AN L4"]
 const TRIBE_OPTIONS = ["AI for Networks"]
+const YEAR_OPTIONS  = ["2024", "2025", "2026", "2027"]
 
 type View = "list" | "timeline"
 
@@ -23,6 +24,7 @@ interface ProjectFiltersProps {
 export function ProjectFilters({ activeView, onViewChange }: ProjectFiltersProps) {
   const [selectedPE,    setSelectedPE]    = useState<string>("")
   const [selectedTribe, setSelectedTribe] = useState<string>("")
+  const [selectedYear,  setSelectedYear]  = useState<string>("2026")
 
   const isListActive     = !activeView || activeView === "list"
   const isTimelineActive = activeView === "timeline"
@@ -33,7 +35,7 @@ export function ProjectFilters({ activeView, onViewChange }: ProjectFiltersProps
       <div className="flex items-center justify-between mb-3 flex-wrap gap-3">
         {/* Left: label + List / Timeline tabs */}
         <div className="flex items-center gap-4">
-          <span className="font-semibold text-base">Project</span>
+          <span className="font-semibold text-base">Projects</span>
           <div className="flex items-center">
             <button
               onClick={() => onViewChange?.("list")}
@@ -101,17 +103,28 @@ export function ProjectFilters({ activeView, onViewChange }: ProjectFiltersProps
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* Date pill */}
-          <div className="flex flex-col items-start border rounded-xl px-3 py-1 text-sm bg-background min-w-[110px] cursor-pointer hover:bg-muted/50 transition-colors">
-            <span className="text-[10px] text-muted-foreground leading-none mb-0.5">Date</span>
-            <div className="flex items-center gap-2 w-full justify-between">
-              <span className="font-semibold text-sm">2026</span>
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-            </div>
-          </div>
+          {/* Date pill — interactive year picker */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="flex flex-col items-start border rounded-xl px-3 py-1 text-sm bg-background min-w-27.5 hover:bg-muted/50 transition-colors outline-none">
+                <span className="text-[10px] text-muted-foreground leading-none mb-0.5">Date</span>
+                <div className="flex items-center gap-2 w-full justify-between">
+                  <span className="font-semibold text-sm">{selectedYear}</span>
+                  <Calendar className="h-4 w-4 text-muted-foreground" />
+                </div>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-28">
+              <DropdownMenuRadioGroup value={selectedYear} onValueChange={setSelectedYear}>
+                {YEAR_OPTIONS.map(y => (
+                  <DropdownMenuRadioItem key={y} value={y}>{y}</DropdownMenuRadioItem>
+                ))}
+              </DropdownMenuRadioGroup>
+            </DropdownMenuContent>
+          </DropdownMenu>
 
           {/* Search pill */}
-          <div className="flex items-center gap-2 border rounded-xl px-3 py-2 text-sm bg-background min-w-[160px] cursor-pointer hover:bg-muted/50 transition-colors">
+          <div className="flex items-center gap-2 border rounded-xl px-3 py-2 text-sm bg-background min-w-40 cursor-pointer hover:bg-muted/50 transition-colors">
             <span className="text-muted-foreground flex-1">Search</span>
             <Search className="h-4 w-4 text-muted-foreground" />
           </div>

@@ -32,13 +32,22 @@ export interface MilestoneMarker {
   updatedAt?: string
 }
 
+export type MilestoneRowStatus = "planned" | "ongoing" | "completed"
+
+export interface StatusTrailEntry {
+  status: MilestoneRowStatus
+  updatedAt: string   // ISO datetime
+  updatedBy: string
+}
+
 export interface MilestoneRow {
   id: string
   name: string
   dueDate: string
-  status: "on-track" | "at-risk"
+  status: MilestoneRowStatus
   segments: MilestoneSegment[]
   markers: MilestoneMarker[]
+  statusHistory?: StatusTrailEntry[]
 }
 
 export interface Project {
@@ -214,23 +223,28 @@ export const projects: Project[] = [
     links: ["https://www.atlassian.com/software/confluence"],
     description:
       "This project aims to design and implement a scalable digital solution that addresses a clearly identified user and business need. It begins with research and requirement gathering to understand target users, stakeholder expectations, and technical constraints. Insights from this phase inform concept development, information architecture, and experience design. The project follows an iterative approach, including prototyping, validation, development, and continuous feedback loops to ensure usability, performance, and alignment with defined success metrics.",
-    nextUpdateDue: "2026-04-02",
+    nextUpdateDue: "2026-04-10",
     milestoneRows: [
       {
         id: "ms1",
-        name: "Milestone 2",
-        dueDate: "18th Feb",
-        status: "on-track",
+        name: "Milestone 1",
+        dueDate: "30th Jan",
+        status: "completed",
         segments: [
           { label: "Establish CASM-Connection via Kafka", startDate: "2026-01-07", endDate: "2026-01-30", type: "completed" },
         ],
         markers: [{ date: "2026-01-30", status: "completed", description: "Collect and document project requirements by engaging stakeholders to understand business goals, user needs, and system expectations. Define functional and non-functional requirements, clarify scope and constraints, and produce a structured requirements document to guide design and development.", updatedAt: "1w ago" }],
+        statusHistory: [
+          { status: "completed", updatedAt: "2026-02-01T14:30:00", updatedBy: "Alycia Smith" },
+          { status: "ongoing",   updatedAt: "2026-01-15T09:00:00", updatedBy: "Alycia Smith" },
+          { status: "planned",   updatedAt: "2026-01-10T09:00:00", updatedBy: "Alycia Smith" },
+        ],
       },
       {
         id: "ms2",
         name: "Milestone 2",
         dueDate: "18th Feb",
-        status: "on-track",
+        status: "ongoing",
         segments: [
           { label: "Establish CASM-Connection via Kafka", startDate: "2026-01-21", endDate: "2026-02-18", type: "in-progress" },
           { label: "Establish CASM-Connection via Kafka", startDate: "2026-02-25", endDate: "2026-04-08", type: "not-started" },
@@ -239,22 +253,30 @@ export const projects: Project[] = [
           { date: "2026-02-18", status: "completed" },
           { date: "2026-04-08", status: "not-started" },
         ],
+        statusHistory: [
+          { status: "ongoing",  updatedAt: "2026-02-20T16:00:00", updatedBy: "Alycia Smith" },
+          { status: "planned",  updatedAt: "2026-01-21T09:00:00", updatedBy: "John Manager" },
+        ],
       },
       {
         id: "ms3",
         name: "Milestone 3",
-        dueDate: "18th Feb",
-        status: "at-risk",
+        dueDate: "18th Mar",
+        status: "ongoing",
         segments: [
           { label: "Establish CASM-Connection via Kafka", startDate: "2026-01-07", endDate: "2026-03-18", type: "in-progress" },
         ],
         markers: [{ date: "2026-03-18", status: "completed" }],
+        statusHistory: [
+          { status: "ongoing",  updatedAt: "2026-03-05T09:30:00", updatedBy: "John Manager" },
+          { status: "planned",  updatedAt: "2026-01-10T09:00:00", updatedBy: "Alycia Smith" },
+        ],
       },
       {
         id: "ms4",
         name: "Milestone 4",
         dueDate: "18th Feb",
-        status: "on-track",
+        status: "planned",
         segments: [
           { label: "Establish CASM-Connection via Kafka", startDate: "2026-02-25", endDate: "2026-03-25", type: "not-started" },
         ],
@@ -264,7 +286,7 @@ export const projects: Project[] = [
         id: "ms5",
         name: "Milestone 5",
         dueDate: "18th Feb",
-        status: "on-track",
+        status: "ongoing",
         segments: [
           { label: "Establish CASM-Connection via Kafka", startDate: "2026-03-18", endDate: "2026-04-08", type: "in-progress" },
         ],
@@ -274,7 +296,7 @@ export const projects: Project[] = [
         id: "ms6",
         name: "Milestone 6",
         dueDate: "18th Feb",
-        status: "on-track",
+        status: "ongoing",
         segments: [
           { label: "Establish CASM-Connection via Kafka", startDate: "2026-04-01", endDate: "2026-04-25", type: "in-progress" },
         ],
@@ -284,7 +306,7 @@ export const projects: Project[] = [
         id: "ms7",
         name: "Milestone 7",
         dueDate: "18th Feb",
-        status: "on-track",
+        status: "ongoing",
         segments: [
           { label: "Establish CASM-Connection via Kafka", startDate: "2026-02-25", endDate: "2026-03-25", type: "in-progress" },
           { label: "Establish CASM-Connection via Kafka", startDate: "2026-04-01", endDate: "2026-04-15", type: "not-started" },
@@ -295,7 +317,7 @@ export const projects: Project[] = [
         id: "ms8",
         name: "Milestone 8",
         dueDate: "18th Feb",
-        status: "on-track",
+        status: "ongoing",
         segments: [
           { label: "Establish CASM-Connection via Kafka", startDate: "2026-03-18", endDate: "2026-04-08", type: "in-progress" },
           { label: "Establish CASM-Connection via Kafka", startDate: "2026-04-08", endDate: "2026-04-22", type: "not-started" },
