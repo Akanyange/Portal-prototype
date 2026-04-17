@@ -12,7 +12,7 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronDown,
-  Bell,
+  AlertCircle,
 } from "lucide-react"
 import { projects, STATUS_BADGE, STATUS_LABEL, type MilestoneRow } from "@/lib/projects-data"
 import { MilestoneGantt, type GanttTimeView } from "@/components/milestone-gantt"
@@ -31,18 +31,25 @@ export default function ProjectDetailPage() {
 
   const activeMilestoneRows: MilestoneRow[] | undefined = project?.milestoneRows
 
-  // Calculate days until next update
-  const daysUntilUpdate = (() => {
-    if (!project?.nextUpdateDue) return null
+  // Find the most urgent upcoming milestone (due within 0–3 days)
+  const urgentMilestone = (() => {
+    if (!project?.milestoneRows) return null
     const today = new Date()
     today.setHours(0, 0, 0, 0)
-    const due = new Date(project.nextUpdateDue)
-    due.setHours(0, 0, 0, 0)
-    return Math.round((due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+    let soonest: { name: string; days: number } | null = null
+    for (const m of project.milestoneRows) {
+      if (!m.dueDateISO || m.status === "completed") continue
+      const due = new Date(m.dueDateISO)
+      due.setHours(0, 0, 0, 0)
+      const days = Math.round((due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+      if (days >= 0 && days <= 3 && (soonest === null || days < soonest.days)) {
+        soonest = { name: m.name, days }
+      }
+    }
+    return soonest
   })()
   const showUpdateBanner =
-    (role === "Admin" || role === "Project Manager") &&
-    daysUntilUpdate !== null && daysUntilUpdate >= 0 && daysUntilUpdate <= 3
+    (role === "Admin" || role === "Project Manager") && urgentMilestone !== null
 
   if (!project) {
     return (
@@ -67,38 +74,38 @@ export default function ProjectDetailPage() {
         <span className="text-foreground font-medium">{project.name}</span>
       </div>
 
-      {/* ── Update reminder banner ──────────────────────────────────────────── */}
-      {showUpdateBanner && (
-        <div className="flex items-start gap-4 rounded-xl border border-amber-300/50 bg-amber-50 px-5 py-4 dark:border-amber-500/30 dark:bg-amber-950/30">
-          <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/50">
-            <Bell className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+      {/* ── Milestone update reminder banner (ODS Inline Notification) ────── */}
+      {showUpdateBanner && urgentMilestone && (
+        <div className="flex items-start gap-3 rounded-lg bg-[#3d1000] px-5 py-4">
+          <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-orange-500">
+            <AlertCircle className="h-4 w-4 text-white" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">
-              Project Update Due{" "}
-              {daysUntilUpdate === 0
+            <p className="text-sm font-bold text-white">
+              Milestone Update Due{" "}
+              {urgentMilestone.days === 0
                 ? "Today"
-                : daysUntilUpdate === 1
+                : urgentMilestone.days === 1
                 ? "Tomorrow"
-                : `in ${daysUntilUpdate} Days`}
+                : `in ${urgentMilestone.days} Days`}
             </p>
-            <p className="mt-0.5 text-sm text-amber-700/80 dark:text-amber-400/80">
+            <p className="mt-1 text-sm text-white/80">
               A status update for this project is due{" "}
-              {daysUntilUpdate === 0
+              {urgentMilestone.days === 0
                 ? "today"
-                : daysUntilUpdate === 1
+                : urgentMilestone.days === 1
                 ? "tomorrow"
-                : `in ${daysUntilUpdate} days`}
+                : `in ${urgentMilestone.days} days`}
               . Please review current milestone progress, flag any blockers, and submit
               the latest project status. This typically takes 5–10 minutes.
             </p>
+            <Link
+              href={`/projects/${project.id}/milestones`}
+              className="mt-2 inline-block text-sm font-medium text-white underline underline-offset-2 hover:text-white/80 transition-colors"
+            >
+              Update
+            </Link>
           </div>
-          <Link
-            href={`/projects/${project.id}/milestones`}
-            className="shrink-0 rounded-full bg-amber-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-amber-700 transition-colors"
-          >
-            Update
-          </Link>
         </div>
       )}
 

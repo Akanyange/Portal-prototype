@@ -44,6 +44,7 @@ export interface MilestoneRow {
   id: string
   name: string
   dueDate: string
+  dueDateISO?: string   // "YYYY-MM-DD" for date calculations
   status: MilestoneRowStatus
   segments: MilestoneSegment[]
   markers: MilestoneMarker[]
@@ -223,7 +224,7 @@ export const projects: Project[] = [
     links: ["https://www.atlassian.com/software/confluence"],
     description:
       "This project aims to design and implement a scalable digital solution that addresses a clearly identified user and business need. It begins with research and requirement gathering to understand target users, stakeholder expectations, and technical constraints. Insights from this phase inform concept development, information architecture, and experience design. The project follows an iterative approach, including prototyping, validation, development, and continuous feedback loops to ensure usability, performance, and alignment with defined success metrics.",
-    nextUpdateDue: "2026-04-10",
+    nextUpdateDue: "2026-04-19",
     milestoneRows: [
       {
         id: "ms1",
@@ -305,7 +306,8 @@ export const projects: Project[] = [
       {
         id: "ms7",
         name: "Milestone 7",
-        dueDate: "18th Feb",
+        dueDate: "19th Apr",
+        dueDateISO: "2026-04-19",
         status: "ongoing",
         segments: [
           { label: "Establish CASM-Connection via Kafka", startDate: "2026-02-25", endDate: "2026-03-25", type: "in-progress" },
