@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Plus, ChevronRight, CalendarDays, User, ExternalLink } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { projects, STATUS_DOT, STATUS_LABEL, type TaskStatus, type GanttMilestone } from "@/lib/projects-data"
+import { projects, PM_OWNED_PROJECT_IDS, STATUS_DOT, STATUS_LABEL, type TaskStatus, type GanttMilestone } from "@/lib/projects-data"
 import { useRole } from "@/lib/role-context"
 import { MilestoneViewModal } from "@/components/milestone-view-modal"
 import { MilestoneModal, type MilestoneData } from "@/components/milestone-modal"
@@ -53,7 +53,7 @@ const TASK_BAR: Record<TaskStatus, string> = {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function GanttChart() {
+export function GanttChart({ scope = "all" }: { scope?: "all" | "mine" }) {
   const router = useRouter()
   const { role } = useRole()
   const [expanded,      setExpanded]      = useState<Set<string>>(new Set())
@@ -104,9 +104,9 @@ export function GanttChart() {
     setEditingMilestone(null)
   }
 
-  const visibleProjects = role === "General User"
-    ? projects.filter(p => p.visibility === "Public")
-    : projects
+  const visibleProjects = projects
+    .filter(p => role !== "General User" || p.visibility === "Public")
+    .filter(p => scope !== "mine" || PM_OWNED_PROJECT_IDS.has(p.id))
 
   useEffect(() => {
     setTodayFraction(getCurrentYearFraction())
@@ -159,10 +159,6 @@ export function GanttChart() {
                     className={`h-3.5 w-3.5 text-muted-foreground shrink-0 transition-transform duration-150 ${isOpen ? "rotate-90" : ""}`}
                     onClick={e => { e.stopPropagation(); toggle(project.id) }}
                   />
-                  {/* T-logo */}
-                  <div className="h-7 w-7 shrink-0 rounded-sm bg-primary flex items-center justify-center text-primary-foreground font-bold text-xs">
-                    T
-                  </div>
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium truncate leading-tight">{project.name}</p>
                     <div className="flex items-center gap-1 mt-0.5">

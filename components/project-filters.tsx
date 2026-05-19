@@ -9,7 +9,6 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-
 const PE_OPTIONS    = ["AI Network Foundations", "Service Observability", "Use case for AN L4"]
 const TRIBE_OPTIONS = ["AI for Networks"]
 const YEAR_OPTIONS  = ["2024", "2025", "2026", "2027"]

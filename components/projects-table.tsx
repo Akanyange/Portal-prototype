@@ -29,7 +29,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { projects, STATUS_BADGE, STATUS_LABEL, type ProjectStatus } from "@/lib/projects-data"
+import { projects, PM_OWNED_PROJECT_IDS, STATUS_BADGE, STATUS_LABEL, type ProjectStatus } from "@/lib/projects-data"
 
 const PE_OPTIONS    = ["AI Network Foundations", "Service Observability", "Use case for AN L4"]
 const TRIBE_OPTIONS = ["AI for Networks"]
@@ -55,9 +55,10 @@ const PER_PAGE_OPTIONS = [10, 20, 50]
 interface ProjectsTableProps {
   defaultTribe?: string
   hideHeader?: boolean
+  scope?: "all" | "mine"
 }
 
-export function ProjectsTable({ defaultTribe = "", hideHeader = false }: ProjectsTableProps) {
+export function ProjectsTable({ defaultTribe = "", hideHeader = false, scope = "all" }: ProjectsTableProps) {
   const router = useRouter()
   const { role } = useRole()
   const [currentPage, setCurrentPage] = useState(1)
@@ -73,9 +74,9 @@ export function ProjectsTable({ defaultTribe = "", hideHeader = false }: Project
   const [filterTribe,  setFilterTribe]  = useState<string>(defaultTribe)
   const [filterStatus, setFilterStatus] = useState<string>("")
 
-  const roleFiltered = role === "General User"
-    ? projects.filter(p => p.visibility === "Public")
-    : projects
+  const roleFiltered = projects
+    .filter(p => role !== "General User" || p.visibility === "Public")
+    .filter(p => scope !== "mine" || PM_OWNED_PROJECT_IDS.has(p.id))
 
   const visibleProjects = roleFiltered.filter(p => {
     if (filterPE     && p.pe     !== filterPE)     return false

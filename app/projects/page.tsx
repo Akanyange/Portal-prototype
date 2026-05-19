@@ -6,11 +6,15 @@ import { Plus, LayoutList, GanttChartSquare } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ProjectsTable } from "@/components/projects-table"
 import { GanttChart } from "@/components/gantt-chart"
+import { useRole } from "@/lib/role-context"
 
-type View = "list" | "timeline"
+type View  = "list" | "timeline"
+type Scope = "all" | "mine"
 
 export default function ProjectsPage() {
-  const [view, setView] = useState<View>("list")
+  const { role } = useRole()
+  const [view,  setView]  = useState<View>("list")
+  const [scope, setScope] = useState<Scope>("all")
 
   return (
     <div className="space-y-4">
@@ -26,34 +30,55 @@ export default function ProjectsPage() {
         </Link>
       </div>
 
-      {/* ── View tabs ─────────────────────────────────────────────────────── */}
-      <div className="flex items-center gap-1 border-b border-border">
-        <button
-          onClick={() => setView("list")}
-          className={`flex items-center gap-1.5 px-3 pb-2.5 pt-1 text-sm border-b-2 -mb-px transition-colors ${
-            view === "list"
-              ? "border-primary text-primary font-medium"
-              : "border-transparent text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          <LayoutList className="h-4 w-4" />
-          Projects List
-        </button>
-        <button
-          onClick={() => setView("timeline")}
-          className={`flex items-center gap-1.5 px-3 pb-2.5 pt-1 text-sm border-b-2 -mb-px transition-colors ${
-            view === "timeline"
-              ? "border-primary text-primary font-medium"
-              : "border-transparent text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          <GanttChartSquare className="h-4 w-4" />
-          Projects Timeline
-        </button>
+      {/* ── View tabs + scope toggle ──────────────────────────────────────── */}
+      <div className="flex items-center justify-between border-b border-border">
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => setView("list")}
+            className={`flex items-center gap-1.5 px-3 pb-2.5 pt-1 text-sm border-b-2 -mb-px transition-colors ${
+              view === "list"
+                ? "border-primary text-primary font-medium"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <LayoutList className="h-4 w-4" />
+            Projects List
+          </button>
+          <button
+            onClick={() => setView("timeline")}
+            className={`flex items-center gap-1.5 px-3 pb-2.5 pt-1 text-sm border-b-2 -mb-px transition-colors ${
+              view === "timeline"
+                ? "border-primary text-primary font-medium"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <GanttChartSquare className="h-4 w-4" />
+            Projects Timeline
+          </button>
+        </div>
+
+        {/* My / All Projects — Project Managers only */}
+        {role === "Project Manager" && (
+          <div className="flex items-center bg-muted rounded-lg p-0.5 mb-px">
+            {(["mine", "all"] as Scope[]).map(s => (
+              <button
+                key={s}
+                onClick={() => setScope(s)}
+                className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${
+                  scope === s
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {s === "mine" ? "My Projects" : "All Projects"}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* ── Content ───────────────────────────────────────────────────────── */}
-      {view === "list" ? <ProjectsTable /> : <GanttChart />}
+      {view === "list" ? <ProjectsTable scope={scope} /> : <GanttChart scope={scope} />}
     </div>
   )
 }

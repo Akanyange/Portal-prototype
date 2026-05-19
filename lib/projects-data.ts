@@ -98,6 +98,8 @@ export const STATUS_BADGE: Record<ProjectStatus, string> = {
   "completed": "bg-emerald-500/15 text-emerald-300",
 }
 
+export const PM_OWNED_PROJECT_IDS = new Set<string>(["fach-cab", "netinsights", "ai-ops"])
+
 export const projects: Project[] = [
   {
     id: "fach-cab",
