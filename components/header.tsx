@@ -12,7 +12,7 @@ const ALL_NAV = [
   { href: "/",                  label: "Overview",             roles: ["Admin", "Project Manager", "General User"] },
   { href: "/projects",          label: "Projects",             roles: ["Admin", "Project Manager", "General User"] },
   { href: "/configurations",    label: "Configurations",       roles: ["Admin"] },
-  { href: "/roles-permissions", label: "Roles & Permissions",  roles: ["Admin"] },
+  { href: "/user-management",   label: "User Management",       roles: ["Admin"] },
 ]
 
 const USER_INFO = {
@@ -135,8 +135,12 @@ export function Header() {
             {profileOpen && (
               <div className="absolute right-0 top-full mt-2 w-72 rounded-2xl border border-border bg-card shadow-xl z-50 overflow-hidden">
 
-                {/* User info */}
-                <div className="flex items-center gap-3 px-5 pt-5 pb-4">
+                {/* User info — click to view profile */}
+                <Link
+                  href="/users/1"
+                  onClick={() => setProfileOpen(false)}
+                  className="flex items-center gap-3 px-5 pt-5 pb-4 hover:bg-muted/30 transition-colors"
+                >
                   <div className="h-10 w-10 rounded-full bg-primary/15 flex items-center justify-center shrink-0">
                     <User className="h-5 w-5 text-primary" />
                   </div>
@@ -144,7 +148,7 @@ export function Header() {
                     <p className="font-bold text-base leading-tight">{USER_INFO.name}</p>
                     <p className="text-sm text-muted-foreground mt-0.5 truncate">{USER_INFO.email}</p>
                   </div>
-                </div>
+                </Link>
 
                 <div className="border-t border-border" />
 

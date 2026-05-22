@@ -454,9 +454,7 @@ export default function ConfigurationsPage() {
       {/* Page header */}
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Configurations</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Manage tribes and portfolios to organize your projects effectively.
-        </p>
+        <p className="text-xs text-muted-foreground mt-0.5">Manage tribes and portfolio elements used to organise projects.</p>
       </div>
 
       {/* Tabs */}

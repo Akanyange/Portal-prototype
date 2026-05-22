@@ -21,7 +21,10 @@ export default function ProjectsPage() {
 
       {/* ── Page header ───────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold tracking-tight">All Projects</h1>
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">All Projects</h1>
+          <p className="text-xs text-muted-foreground mt-0.5">Browse and manage all projects across tribes and portfolio elements.</p>
+        </div>
         <Link href="/projects/new">
           <Button className="rounded-full px-5 gap-2 bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm">
             <Plus className="h-4 w-4" />
