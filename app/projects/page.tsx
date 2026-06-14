@@ -6,15 +6,10 @@ import { Plus, LayoutList, GanttChartSquare } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ProjectsTable } from "@/components/projects-table"
 import { GanttChart } from "@/components/gantt-chart"
-import { useRole } from "@/lib/role-context"
-
-type View  = "list" | "timeline"
-type Scope = "all" | "mine"
+type View = "list" | "timeline"
 
 export default function ProjectsPage() {
-  const { role } = useRole()
-  const [view,  setView]  = useState<View>("list")
-  const [scope, setScope] = useState<Scope>("all")
+  const [view, setView] = useState<View>("list")
 
   return (
     <div className="space-y-4">
@@ -60,28 +55,10 @@ export default function ProjectsPage() {
           </button>
         </div>
 
-        {/* My / All Projects — Project Managers only */}
-        {role === "Project Manager" && (
-          <div className="flex items-center bg-muted rounded-lg p-0.5 mb-px">
-            {(["mine", "all"] as Scope[]).map(s => (
-              <button
-                key={s}
-                onClick={() => setScope(s)}
-                className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${
-                  scope === s
-                    ? "bg-background text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {s === "mine" ? "My Projects" : "All Projects"}
-              </button>
-            ))}
-          </div>
-        )}
       </div>
 
       {/* ── Content ───────────────────────────────────────────────────────── */}
-      {view === "list" ? <ProjectsTable scope={scope} /> : <GanttChart scope={scope} />}
+      {view === "list" ? <ProjectsTable /> : <GanttChart />}
     </div>
   )
 }

@@ -58,7 +58,7 @@ interface ProjectsTableProps {
   scope?: "all" | "mine"
 }
 
-export function ProjectsTable({ defaultTribe = "", hideHeader = false, scope = "all" }: ProjectsTableProps) {
+export function ProjectsTable({ defaultTribe = "", hideHeader = false, scope: scopeProp = "all" }: ProjectsTableProps) {
   const router = useRouter()
   const { role } = useRole()
   const [currentPage, setCurrentPage] = useState(1)
@@ -73,6 +73,7 @@ export function ProjectsTable({ defaultTribe = "", hideHeader = false, scope = "
   const [filterPE,     setFilterPE]     = useState<string>("")
   const [filterTribe,  setFilterTribe]  = useState<string>(defaultTribe)
   const [filterStatus, setFilterStatus] = useState<string>("")
+  const [scope,        setScope]        = useState<"all" | "mine">(scopeProp)
 
   const roleFiltered = projects
     .filter(p => role !== "General User" || p.visibility === "Public")
@@ -181,6 +182,24 @@ export function ProjectsTable({ defaultTribe = "", hideHeader = false, scope = "
             </DropdownMenuContent>
           </DropdownMenu>
 
+          {/* Assigned to me / All — PM only */}
+          {role === "Project Manager" && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className={`flex items-center gap-2 border rounded-full px-4 py-1.5 text-sm bg-background hover:bg-muted/50 transition-colors outline-none ${scope === "mine" ? "border-primary text-primary" : ""}`}>
+                  {scope === "mine" ? "Assigned to me" : "All Projects"}
+                  <ChevronDown className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-44">
+                <DropdownMenuRadioGroup value={scope} onValueChange={v => { setScope(v as "all" | "mine"); setCurrentPage(1) }}>
+                  <DropdownMenuRadioItem value="all">All Projects</DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="mine">Assigned to me</DropdownMenuRadioItem>
+                </DropdownMenuRadioGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+
           {/* Search */}
           <div className="flex items-center gap-2 border rounded-full px-3 py-1.5 bg-background min-w-50">
             <input
@@ -212,7 +231,6 @@ export function ProjectsTable({ defaultTribe = "", hideHeader = false, scope = "
               <th className="px-3 py-3 text-left font-semibold text-foreground whitespace-nowrap">Start Date</th>
               <th className="px-3 py-3 text-left font-semibold text-foreground whitespace-nowrap">Estimated End Date</th>
               <th className="px-3 py-3 text-left font-semibold text-foreground whitespace-nowrap">Board</th>
-              <th className="px-3 py-3 text-left font-semibold text-foreground whitespace-nowrap">Visibility</th>
               <th className="px-3 py-3 text-left font-semibold text-foreground whitespace-nowrap">Status</th>
               <th className="px-3 py-3 text-left font-semibold text-foreground whitespace-nowrap">Actions</th>
             </tr>
@@ -264,9 +282,6 @@ export function ProjectsTable({ defaultTribe = "", hideHeader = false, scope = "
                     Jira board
                   </a>
                 </td>
-
-                {/* Visibility */}
-                <td className="px-3 py-3 text-muted-foreground">{project.visibility}</td>
 
                 {/* Status */}
                 <td className="px-3 py-3">

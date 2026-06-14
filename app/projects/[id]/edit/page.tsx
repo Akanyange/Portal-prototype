@@ -24,6 +24,7 @@ export default function EditProjectPage() {
   const initialData = {
     name: project.name,
     description: project.description ?? "",
+    status: project.status,
     startDate: "",
     endDate: "",
     tribe: project.tribe,

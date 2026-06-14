@@ -71,11 +71,6 @@ export function Header() {
           </div>
         </div>
 
-        {/* App name */}
-        <div className="flex items-center pr-8">
-          <span className="text-sm text-primary font-medium">Application name</span>
-        </div>
-
         {/* Tab navigation — filtered by role */}
         <nav className="flex items-stretch gap-1">
           {nav.map(({ href, label }) => {

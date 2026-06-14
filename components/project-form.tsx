@@ -11,6 +11,8 @@ import {
   CheckCircle2,
 } from "lucide-react"
 import { MilestoneModal, type MilestoneData } from "@/components/milestone-modal"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import { Button } from "@/components/ui/button"
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -27,6 +29,15 @@ const PES = [
   "Use case for AN L4",
   "Core Platform",
 ]
+
+const PROJECT_STATUSES = ["planned", "ongoing", "completed"] as const
+type ProjectStatus = typeof PROJECT_STATUSES[number]
+
+const PROJECT_STATUS_LABELS: Record<ProjectStatus, string> = {
+  planned:   "Planned",
+  ongoing:   "Ongoing",
+  completed: "Completed",
+}
 
 const STATUS_COLORS: Record<MilestoneData["status"], string> = {
   "Planned":   "bg-blue-500/20 text-blue-400",
@@ -96,6 +107,7 @@ function Field({
 export interface ProjectFormInitialData {
   name: string
   description: string
+  status: ProjectStatus
   startDate: string
   endDate: string
   tribe: string
@@ -120,6 +132,7 @@ export function ProjectForm({ mode, initialData, onSave, onCancel }: ProjectForm
   // Form state
   const [name,        setName]        = useState(initialData?.name        ?? "")
   const [description, setDescription] = useState(initialData?.description ?? "")
+  const [status,      setStatus]      = useState<ProjectStatus>(initialData?.status ?? "planned")
   const [startDate,   setStartDate]   = useState(initialData?.startDate   ?? "")
   const [endDate,     setEndDate]     = useState(initialData?.endDate     ?? "")
   const [tribe,       setTribe]       = useState(initialData?.tribe       ?? "")
@@ -137,6 +150,7 @@ export function ProjectForm({ mode, initialData, onSave, onCancel }: ProjectForm
   // Milestone modal
   const [showModal,        setShowModal]        = useState(false)
   const [editingMilestone, setEditingMilestone] = useState<MilestoneData | undefined>()
+  const [pendingDeleteId,  setPendingDeleteId]  = useState<string | null>(null)
 
   // Tooltip
   const [showTooltip, setShowTooltip] = useState(false)
@@ -162,11 +176,12 @@ export function ProjectForm({ mode, initialData, onSave, onCancel }: ProjectForm
 
   function deleteMilestone(id: string) {
     setMilestones(prev => prev.filter(m => m.id !== id))
+    setPendingDeleteId(null)
   }
 
   function handleSave() {
     if (!name.trim()) return
-    onSave({ name, description, startDate, endDate, tribe, pe, isPublic, boardUrl, leadEmail, milestones })
+    onSave({ name, description, status, startDate, endDate, tribe, pe, isPublic, boardUrl, leadEmail, milestones })
   }
 
   const canSave = !!name.trim()
@@ -206,6 +221,23 @@ export function ProjectForm({ mode, initialData, onSave, onCancel }: ProjectForm
               rows={3}
               className="w-full text-sm outline-none resize-none placeholder:text-muted-foreground"
             />
+          </div>
+
+          {/* Status */}
+          <div className="border rounded-xl px-4 pt-4 pb-3 relative">
+            <label className="block text-xs text-muted-foreground mb-0.5">
+              Project Status<span className="text-destructive ml-0.5">*</span>
+            </label>
+            <select
+              value={status}
+              onChange={e => setStatus(e.target.value as ProjectStatus)}
+              className="w-full text-sm outline-none bg-card appearance-none cursor-pointer pr-6"
+            >
+              {PROJECT_STATUSES.map(s => (
+                <option key={s} value={s}>{PROJECT_STATUS_LABELS[s]}</option>
+              ))}
+            </select>
+            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
           </div>
 
           {/* Dates */}
@@ -321,7 +353,7 @@ export function ProjectForm({ mode, initialData, onSave, onCancel }: ProjectForm
         </Section>
 
         {/* ── Add Milestones ────────────────────────────────────────────────── */}
-        <Section title="Add Milestones" open={openMilestones} onToggle={() => setOpenMilestones(v => !v)}>
+        <Section title="Add Milestones (Optional)" open={openMilestones} onToggle={() => setOpenMilestones(v => !v)}>
 
           {/* Milestone cards */}
           {milestones.map(m => (
@@ -343,7 +375,7 @@ export function ProjectForm({ mode, initialData, onSave, onCancel }: ProjectForm
                   <Pencil className="h-4 w-4" />
                 </button>
                 <button
-                  onClick={() => deleteMilestone(m.id)}
+                  onClick={() => setPendingDeleteId(m.id)}
                   className="p-1.5 rounded hover:bg-muted/50 hover:text-destructive transition-colors"
                 >
                   <Trash2 className="h-4 w-4" />
@@ -380,6 +412,18 @@ export function ProjectForm({ mode, initialData, onSave, onCancel }: ProjectForm
           {mode === "create" ? "Save Project" : "Save Changes"}
         </button>
       </div>
+
+      {/* Delete milestone confirmation */}
+      <Dialog open={pendingDeleteId !== null} onOpenChange={() => setPendingDeleteId(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader><DialogTitle>Delete Milestone</DialogTitle></DialogHeader>
+          <p className="text-sm text-muted-foreground py-2">Are you sure you want to delete this milestone? This action cannot be undone.</p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPendingDeleteId(null)}>Cancel</Button>
+            <Button variant="destructive" onClick={() => pendingDeleteId && deleteMilestone(pendingDeleteId)}>Delete</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Milestone modal */}
       {showModal && (

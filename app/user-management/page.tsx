@@ -4,7 +4,7 @@ import { useState } from "react"
 import Link from "next/link"
 import {
   Check, ChevronDown, MoreHorizontal, Pencil, Plus, Search,
-  Trash2, UserPlus, X, Users, Shield, Inbox,
+  Trash2, UserPlus, X, Users, Shield, Inbox, RefreshCw, Info,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -15,13 +15,15 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { toast } from "@/lib/toast"
 import {
-  USERS, ROLE_BADGE, STATUS_BADGE, avatarColor,
+  USERS, ROLE_BADGE, avatarColor,
   type AppUser, type UserRole, type UserStatus,
 } from "@/lib/users-data"
+import { useRole } from "@/lib/role-context"
+import { PM_OWNED_PROJECT_IDS } from "@/lib/projects-data"
 
-// ── Types (R&P) ───────────────────────────────────────────────────────────────
+// ── Types ─────────────────────────────────────────────────────────────────────
 
-type RequestStatus = "pending" | "invite-sent"
+type RequestStatus = "pending" | "invite-sent" | "expired"
 type AccessType    = "open" | "invite-only"
 type Tab           = "users" | "roles" | "requests"
 
@@ -33,7 +35,7 @@ interface Role {
   id: string; name: string; permissions: string[]; access: AccessType; members: RoleMember[]
 }
 
-// ── Seed data (R&P) ───────────────────────────────────────────────────────────
+// ── Seed data ─────────────────────────────────────────────────────────────────
 
 const SEED_REQUESTS: AccessRequest[] = [
   { id: "1", email: "thomas.butler@telekom.de", status: "pending",     role: "Project Manager" },
@@ -41,6 +43,8 @@ const SEED_REQUESTS: AccessRequest[] = [
   { id: "3", email: "max.meier@telekom.de",     status: "pending",     role: "General User"    },
   { id: "4", email: "lisa.wagner@telekom.de",   status: "pending",     role: "Project Manager" },
   { id: "5", email: "peter.mueller@telekom.de", status: "invite-sent", role: "Admin"           },
+  { id: "6", email: "hans.weber@telekom.de",    status: "expired",     role: "Project Manager" },
+  { id: "7", email: "frank.braun@telekom.de",   status: "expired",     role: "General User"    },
 ]
 
 const MEMBER_POOL: RoleMember[] = [
@@ -89,19 +93,96 @@ function AvatarStack({ members, max = 5 }: { members: RoleMember[]; max?: number
   )
 }
 
-// ── Users tab ─────────────────────────────────────────────────────────────────
+// ── Change Role modal ─────────────────────────────────────────────────────────
+
+function ChangeRoleModal({
+  user, open, onClose, onSave,
+}: { user: AppUser | null; open: boolean; onClose: () => void; onSave: (role: UserRole) => void }) {
+  const [role, setRole] = useState<UserRole>(user?.role ?? "General User")
+
+  if (!user) return null
+
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader><DialogTitle>Change Role — {user.name}</DialogTitle></DialogHeader>
+        <div className="py-2 space-y-3">
+          <p className="text-xs text-muted-foreground">Select a new role for this user.</p>
+          <div className="flex flex-col gap-2.5">
+            {ROLE_OPTIONS.map(r => (
+              <label key={r} className="flex items-center gap-2.5 cursor-pointer">
+                <div
+                  onClick={() => setRole(r)}
+                  className={`h-4 w-4 rounded-full border-2 flex items-center justify-center cursor-pointer ${role === r ? "border-primary bg-primary" : "border-border"}`}
+                >
+                  {role === r && <div className="h-1.5 w-1.5 rounded-full bg-white" />}
+                </div>
+                <span className="text-sm">{r}</span>
+                {r === user.role && <span className="text-[10px] text-muted-foreground ml-auto">(current)</span>}
+              </label>
+            ))}
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button onClick={() => onSave(role)} className="bg-primary text-primary-foreground hover:bg-primary/90">Save</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+// ── Remove confirm modal ──────────────────────────────────────────────────────
+
+function RemoveUserModal({
+  user, open, onClose, onConfirm,
+}: { user: AppUser | null; open: boolean; onClose: () => void; onConfirm: () => void }) {
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader><DialogTitle>Remove User</DialogTitle></DialogHeader>
+        <p className="text-sm text-muted-foreground py-2">
+          Are you sure you want to remove <span className="font-medium text-foreground">{user?.name}</span> from the portal?
+        </p>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button variant="destructive" onClick={onConfirm}>Remove</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+// ── Admin Users tab ───────────────────────────────────────────────────────────
 
 function UsersTab({ onInvite }: { onInvite: () => void }) {
-  const [search,      setSearch]      = useState("")
-  const [filterRole,  setFilterRole]  = useState<UserRole | "">("")
-  const [filterStatus, setFilterStatus] = useState<UserStatus | "">("")
+  const [users,         setUsers]         = useState<AppUser[]>(USERS)
+  const [search,        setSearch]        = useState("")
+  const [filterRole,    setFilterRole]    = useState<UserRole | "">("")
+  const [filterStatus,  setFilterStatus]  = useState<UserStatus | "">("")
+  const [changeRoleUser, setChangeRoleUser] = useState<AppUser | null>(null)
+  const [removeUser,     setRemoveUser]     = useState<AppUser | null>(null)
 
-  const filtered = USERS.filter(u => {
+  const filtered = users.filter(u => {
     if (search && !u.name.toLowerCase().includes(search.toLowerCase()) && !u.email.toLowerCase().includes(search.toLowerCase())) return false
     if (filterRole   && u.role   !== filterRole)   return false
     if (filterStatus && u.status !== filterStatus) return false
     return true
   })
+
+  function handleChangeRole(role: UserRole) {
+    if (!changeRoleUser) return
+    setUsers(prev => prev.map(u => u.id === changeRoleUser.id ? { ...u, role } : u))
+    toast("Role updated", `${changeRoleUser.name}'s role has been changed to ${role}.`)
+    setChangeRoleUser(null)
+  }
+
+  function handleRemove() {
+    if (!removeUser) return
+    setUsers(prev => prev.filter(u => u.id !== removeUser.id))
+    toast("User removed", `${removeUser.name} has been removed from the portal.`, "error")
+    setRemoveUser(null)
+  }
 
   return (
     <>
@@ -120,10 +201,9 @@ function UsersTab({ onInvite }: { onInvite: () => void }) {
         </Button>
       </div>
 
-      {/* Filter bar: filters left · search right */}
+      {/* Filter bar */}
       <div className="flex items-center justify-between mb-4 gap-3">
         <div className="flex items-center gap-2">
-          {/* All roles */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button className={`flex items-center gap-2 border rounded-full px-4 py-1.5 text-sm bg-background hover:bg-muted/50 transition-colors outline-none ${filterRole ? "border-primary text-primary" : ""}`}>
@@ -143,7 +223,6 @@ function UsersTab({ onInvite }: { onInvite: () => void }) {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* Status */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button className={`flex items-center gap-2 border rounded-full px-4 py-1.5 text-sm bg-background hover:bg-muted/50 transition-colors outline-none ${filterStatus ? "border-primary text-primary" : ""}`}>
@@ -164,7 +243,6 @@ function UsersTab({ onInvite }: { onInvite: () => void }) {
           </DropdownMenu>
         </div>
 
-        {/* Search */}
         <div className="flex items-center gap-1.5 border rounded-full px-4 py-1.5 bg-background min-w-56 hover:bg-muted/30 transition-colors">
           <input
             value={search}
@@ -178,13 +256,11 @@ function UsersTab({ onInvite }: { onInvite: () => void }) {
 
       {/* Table */}
       <div className="rounded-xl border border-border overflow-hidden">
-        {/* Header */}
         <div className="flex items-center px-5 py-3 bg-muted/40 border-b border-border text-xs font-semibold text-muted-foreground uppercase tracking-wide">
           <span className="w-8 shrink-0"><input type="checkbox" className="h-3.5 w-3.5 accent-primary" /></span>
-          <span className="flex-1">User</span>
-          <span className="w-60">Email</span>
-          <span className="w-40">Role</span>
-          <span className="w-28">Status</span>
+          <span className="flex-1">Name</span>
+          <span className="w-64">Email</span>
+          <span className="w-44">Role</span>
           <span className="w-16 text-right">Actions</span>
         </div>
 
@@ -199,26 +275,19 @@ function UsersTab({ onInvite }: { onInvite: () => void }) {
           >
             <span className="w-8 shrink-0"><input type="checkbox" className="h-3.5 w-3.5 accent-primary" /></span>
 
-            {/* User cell */}
-            <Link href={`/users/${u.id}`} className="flex-1 flex items-center gap-3 min-w-0 hover:opacity-80 transition-opacity">
+            {/* Name cell */}
+            <div className="flex-1 flex items-center gap-3 min-w-0">
               <div className={`h-8 w-8 rounded-full ${avatarColor(u.initials)} flex items-center justify-center text-[11px] font-bold text-white shrink-0`}>
                 {u.initials}
               </div>
               <span className="text-sm font-medium truncate">{u.name}</span>
-            </Link>
+            </div>
 
-            <span className="w-60 text-sm text-muted-foreground truncate">{u.email}</span>
+            <span className="w-64 text-sm text-muted-foreground truncate">{u.email}</span>
 
-            <span className="w-40">
+            <span className="w-44">
               <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${ROLE_BADGE[u.role]}`}>
                 {u.role}
-              </span>
-            </span>
-
-            <span className="w-28">
-              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${STATUS_BADGE[u.status]}`}>
-                <span className={`h-1.5 w-1.5 rounded-full mr-1.5 ${u.status === "active" ? "bg-emerald-500" : "bg-zinc-400"}`} />
-                {u.status === "active" ? "Active" : "Inactive"}
               </span>
             </span>
 
@@ -230,16 +299,17 @@ function UsersTab({ onInvite }: { onInvite: () => void }) {
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-40">
-                  <DropdownMenuItem asChild>
-                    <Link href={`/users/${u.id}`} className="flex items-center gap-2">
-                      <Users className="h-3.5 w-3.5" /> View Profile
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem className="flex items-center gap-2">
-                    <Pencil className="h-3.5 w-3.5" /> Edit User
+                  <DropdownMenuItem
+                    onClick={() => setChangeRoleUser(u)}
+                    className="flex items-center gap-2"
+                  >
+                    <Shield className="h-3.5 w-3.5" /> Change Role
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem className="flex items-center gap-2 text-destructive focus:text-destructive">
+                  <DropdownMenuItem
+                    onClick={() => setRemoveUser(u)}
+                    className="flex items-center gap-2 text-destructive focus:text-destructive"
+                  >
                     <Trash2 className="h-3.5 w-3.5" /> Remove
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -249,26 +319,155 @@ function UsersTab({ onInvite }: { onInvite: () => void }) {
         ))}
       </div>
 
-      {/* Pagination */}
       <div className="flex items-center justify-between mt-4 text-xs text-muted-foreground">
         <span>{filtered.length} user{filtered.length !== 1 ? "s" : ""}</span>
         <span>1 of 1</span>
       </div>
+
+      <ChangeRoleModal
+        user={changeRoleUser}
+        open={changeRoleUser !== null}
+        onClose={() => setChangeRoleUser(null)}
+        onSave={handleChangeRole}
+      />
+      <RemoveUserModal
+        user={removeUser}
+        open={removeUser !== null}
+        onClose={() => setRemoveUser(null)}
+        onConfirm={handleRemove}
+      />
     </>
   )
 }
 
-// ── Requests tab ──────────────────────────────────────────────────────────────
+// ── PM Users tab (project-scoped) ─────────────────────────────────────────────
+
+function PMUsersTab() {
+  const [search, setSearch] = useState("")
+  const [removeUser, setRemoveUser] = useState<AppUser | null>(null)
+  const [pmUsers, setPmUsers] = useState<AppUser[]>(
+    USERS.filter(u => u.projectIds.some(pid => PM_OWNED_PROJECT_IDS.has(pid)))
+  )
+
+  const filtered = pmUsers.filter(u => {
+    if (search && !u.name.toLowerCase().includes(search.toLowerCase()) && !u.email.toLowerCase().includes(search.toLowerCase())) return false
+    return true
+  })
+
+  function handleRemove() {
+    if (!removeUser) return
+    setPmUsers(prev => prev.filter(u => u.id !== removeUser.id))
+    toast("User removed", `${removeUser.name} has been removed from your project.`, "error")
+    setRemoveUser(null)
+  }
+
+  return (
+    <>
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <p className="text-sm font-semibold">Project Users</p>
+          <p className="text-xs text-muted-foreground mt-0.5">Users currently assigned to your project(s).</p>
+        </div>
+        <div className="flex items-center gap-1.5 border rounded-full px-4 py-1.5 bg-background min-w-56 hover:bg-muted/30 transition-colors">
+          <input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Search users"
+            className="flex-1 text-sm outline-none bg-transparent placeholder:text-muted-foreground"
+          />
+          <Search className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+        </div>
+      </div>
+
+      <div className="rounded-xl border border-border overflow-hidden">
+        <div className="flex items-center px-5 py-3 bg-muted/40 border-b border-border text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+          <span className="flex-1">Name</span>
+          <span className="w-64">Email</span>
+          <span className="w-44">Role</span>
+          <span className="w-48 text-right">Actions</span>
+        </div>
+
+        {filtered.length === 0 && (
+          <div className="px-5 py-10 text-center text-sm text-muted-foreground">No users found.</div>
+        )}
+
+        {filtered.map((u, idx) => (
+          <div
+            key={u.id}
+            className={`flex items-center px-5 py-3.5 hover:bg-muted/20 transition-colors ${idx < filtered.length - 1 ? "border-b border-border" : ""}`}
+          >
+            <div className="flex-1 flex items-center gap-3 min-w-0">
+              <div className={`h-8 w-8 rounded-full ${avatarColor(u.initials)} flex items-center justify-center text-[11px] font-bold text-white shrink-0`}>
+                {u.initials}
+              </div>
+              <span className="text-sm font-medium truncate">{u.name}</span>
+            </div>
+
+            <span className="w-64 text-sm text-muted-foreground truncate">{u.email}</span>
+
+            <span className="w-44">
+              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${ROLE_BADGE[u.role]}`}>
+                {u.role}
+              </span>
+            </span>
+
+            <div className="w-48 flex items-center justify-end gap-2">
+              <Link
+                href={`/users/${u.id}`}
+                className="flex items-center gap-1.5 text-xs font-semibold px-4 py-1.5 rounded-full border hover:bg-muted/40 transition-colors"
+              >
+                <Users className="h-3 w-3" /> View Profile
+              </Link>
+              <button
+                onClick={() => setRemoveUser(u)}
+                className="p-1.5 rounded hover:bg-destructive/10 text-destructive transition-colors"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="mt-4 text-xs text-muted-foreground">
+        {filtered.length} user{filtered.length !== 1 ? "s" : ""}
+      </div>
+
+      <RemoveUserModal
+        user={removeUser}
+        open={removeUser !== null}
+        onClose={() => setRemoveUser(null)}
+        onConfirm={handleRemove}
+      />
+    </>
+  )
+}
+
+// ── Request badge ─────────────────────────────────────────────────────────────
 
 function RequestBadge({ status }: { status: RequestStatus }) {
+  if (status === "pending") {
+    return (
+      <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/20 text-amber-400 border border-amber-500/30">
+        Pending Request
+      </span>
+    )
+  }
+  if (status === "expired") {
+    return (
+      <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-rose-500/20 text-rose-400 border border-rose-500/30">
+        Expired
+      </span>
+    )
+  }
   return (
-    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
-      status === "pending" ? "bg-amber-500/20 text-amber-400 border border-amber-500/30" : "bg-primary/90 text-white"
-    }`}>
-      {status === "pending" ? "Pending Request" : "Invite Sent"}
+    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-primary/90 text-white">
+      Invite Sent
     </span>
   )
 }
+
+// ── Requests tab ──────────────────────────────────────────────────────────────
 
 function RequestsTab() {
   const [requests,     setRequests]     = useState<AccessRequest[]>(SEED_REQUESTS)
@@ -306,12 +505,24 @@ function RequestsTab() {
     toast("Invite withdrawn", `The invite to ${r.email} has been withdrawn.`, "error")
   }
 
+  function resendInvite(r: AccessRequest) {
+    setRequests(prev => prev.map(x => x.id === r.id ? { ...x, status: "invite-sent" } : x))
+    toast("Invite re-sent", `A new invite has been sent to ${r.email}.`)
+  }
+
   function handleDelete() {
     const r = requests.find(x => x.id === delId)
     setRequests(prev => prev.filter(x => x.id !== delId))
     setDelId(null)
     if (r) toast("Request removed", `Request from ${r.email} has been removed.`, "error")
   }
+
+  const STATUS_FILTER_OPTIONS: { value: RequestStatus | ""; label: string }[] = [
+    { value: "",            label: "All"              },
+    { value: "pending",     label: "Pending Request"  },
+    { value: "invite-sent", label: "Invite Sent"      },
+    { value: "expired",     label: "Expired"          },
+  ]
 
   return (
     <>
@@ -321,17 +532,17 @@ function RequestsTab() {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button className={`flex items-center gap-2 border rounded-full px-4 py-1.5 text-sm bg-background hover:bg-muted/50 transition-colors outline-none ${filterStatus ? "border-primary text-primary" : ""}`}>
-                {filterStatus === "pending" ? "Pending" : filterStatus === "invite-sent" ? "Invite Sent" : "Status"}
+                {STATUS_FILTER_OPTIONS.find(o => o.value === filterStatus)?.label ?? "Status"}
                 <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-44">
-              {(["", "pending", "invite-sent"] as const).map(s => (
-                <DropdownMenuItem key={s} onClick={() => setFilterStatus(s)} className="flex items-center gap-2">
-                  <div className={`h-3 w-3 rounded-full border-2 flex items-center justify-center shrink-0 ${filterStatus === s ? "border-primary bg-primary" : "border-border"}`}>
-                    {filterStatus === s && <div className="h-1 w-1 rounded-full bg-white" />}
+              {STATUS_FILTER_OPTIONS.map(({ value, label }) => (
+                <DropdownMenuItem key={value} onClick={() => setFilterStatus(value)} className="flex items-center gap-2">
+                  <div className={`h-3 w-3 rounded-full border-2 flex items-center justify-center shrink-0 ${filterStatus === value ? "border-primary bg-primary" : "border-border"}`}>
+                    {filterStatus === value && <div className="h-1 w-1 rounded-full bg-white" />}
                   </div>
-                  {s === "" ? "All" : s === "pending" ? "Pending Request" : "Invite Sent"}
+                  {label}
                 </DropdownMenuItem>
               ))}
             </DropdownMenuContent>
@@ -368,7 +579,7 @@ function RequestsTab() {
         <div className="flex items-center px-5 py-3 bg-muted/40 border-b border-border text-xs font-semibold text-muted-foreground uppercase tracking-wide">
           <span className="w-8 shrink-0"><input type="checkbox" className="h-3.5 w-3.5 accent-primary" /></span>
           <span className="flex-1">User</span>
-          <span className="w-48">Status</span>
+          <span className="w-44">Status</span>
           <span className="w-44">Role</span>
           <span className="w-56 text-right">Actions</span>
         </div>
@@ -377,10 +588,10 @@ function RequestsTab() {
           <div key={r.id} className={`flex items-center px-5 py-3.5 hover:bg-muted/20 transition-colors ${idx < filtered.length - 1 ? "border-b border-border" : ""}`}>
             <span className="w-8 shrink-0"><input type="checkbox" className="h-3.5 w-3.5 accent-primary" /></span>
             <span className="flex-1 text-sm">{r.email}</span>
-            <span className="w-48"><RequestBadge status={r.status} /></span>
+            <span className="w-44"><RequestBadge status={r.status} /></span>
             <span className="w-44 text-sm text-primary underline underline-offset-2">{r.role}</span>
             <div className="w-56 flex items-center justify-end gap-2">
-              {r.status === "pending" ? (
+              {r.status === "pending" && (
                 <>
                   <button onClick={() => approveRequest(r)} className="flex items-center gap-1.5 bg-primary text-primary-foreground text-xs font-semibold px-4 py-1.5 rounded-full hover:bg-primary/90 transition-colors">
                     <Check className="h-3 w-3" /> Approve
@@ -389,13 +600,24 @@ function RequestsTab() {
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>
                 </>
-              ) : (
+              )}
+              {r.status === "invite-sent" && (
                 <>
                   <button onClick={() => withdrawInvite(r)} className="flex items-center gap-1.5 bg-primary text-primary-foreground text-xs font-semibold px-4 py-1.5 rounded-full hover:bg-primary/90 transition-colors">
                     Withdraw
                   </button>
                   <button onClick={() => openEdit(r)} className="p-1.5 rounded hover:bg-primary/10 text-primary transition-colors">
                     <Pencil className="h-3.5 w-3.5" />
+                  </button>
+                </>
+              )}
+              {r.status === "expired" && (
+                <>
+                  <button onClick={() => resendInvite(r)} className="flex items-center gap-1.5 bg-primary text-primary-foreground text-xs font-semibold px-4 py-1.5 rounded-full hover:bg-primary/90 transition-colors">
+                    <RefreshCw className="h-3 w-3" /> Re-send
+                  </button>
+                  <button onClick={() => setDelId(r.id)} className="p-1.5 rounded hover:bg-destructive/10 text-destructive transition-colors">
+                    <Trash2 className="h-3.5 w-3.5" />
                   </button>
                 </>
               )}
@@ -623,23 +845,45 @@ function InviteUserModal({ open, onClose, onInvite }: { open: boolean; onClose: 
   const [email, setEmail] = useState("")
   const [role,  setRole]  = useState<UserRole>("General User")
 
+  const emailTrimmed    = email.trim().toLowerCase()
+  const alreadyExists   = emailTrimmed !== "" && USERS.some(u => u.email.toLowerCase() === emailTrimmed)
+
   function handleSubmit() {
-    if (!email.trim()) return
+    if (!email.trim() || alreadyExists) return
     onInvite(email.trim(), role)
     setEmail(""); setRole("General User")
   }
 
+  function handleClose() {
+    setEmail(""); setRole("General User")
+    onClose()
+  }
+
   return (
-    <Dialog open={open} onOpenChange={onClose}>
+    <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-md">
         <DialogHeader><DialogTitle>Invite User</DialogTitle></DialogHeader>
         <div className="py-2 space-y-4">
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Email Address <span className="text-destructive">*</span></label>
-            <Input type="email" placeholder="user@telekom.de" value={email} onChange={e => setEmail(e.target.value)} onKeyDown={e => e.key === "Enter" && handleSubmit()} autoFocus />
+            <Input
+              type="email"
+              placeholder="user@telekom.de"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && handleSubmit()}
+              autoFocus
+              className={alreadyExists ? "border-destructive focus-visible:ring-destructive" : ""}
+            />
+            {alreadyExists && (
+              <p className="flex items-center gap-1.5 text-xs text-destructive">
+                <Info className="h-3.5 w-3.5 shrink-0" />
+                User already exists.
+              </p>
+            )}
           </div>
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Role</label>
+            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">User Group</label>
             <div className="flex flex-col gap-2">
               {ROLE_OPTIONS.map(r => (
                 <label key={r} className="flex items-center gap-2.5 cursor-pointer">
@@ -653,8 +897,8 @@ function InviteUserModal({ open, onClose, onInvite }: { open: boolean; onClose: 
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button disabled={!email.trim()} onClick={handleSubmit} className="bg-primary text-primary-foreground hover:bg-primary/90">Send Invite</Button>
+          <Button variant="outline" onClick={handleClose}>Cancel</Button>
+          <Button disabled={!email.trim() || alreadyExists} onClick={handleSubmit} className="bg-primary text-primary-foreground hover:bg-primary/90">Invite</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -726,13 +970,14 @@ function CreateRoleModal({ open, onClose, onCreate }: { open: boolean; onClose: 
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
-const TAB_META: { id: Tab; label: string; icon: React.ReactNode }[] = [
-  { id: "users",    label: "Users",                icon: <Users   className="h-3.5 w-3.5" /> },
-  { id: "roles",    label: "Roles & Permissions",  icon: <Shield  className="h-3.5 w-3.5" /> },
-  { id: "requests", label: "Requests",             icon: <Inbox   className="h-3.5 w-3.5" /> },
+const ADMIN_TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
+  { id: "users",    label: "Users",               icon: <Users  className="h-3.5 w-3.5" /> },
+  { id: "roles",    label: "Roles & Permissions", icon: <Shield className="h-3.5 w-3.5" /> },
+  { id: "requests", label: "Requests",            icon: <Inbox  className="h-3.5 w-3.5" /> },
 ]
 
 export default function UserManagementPage() {
+  const { role } = useRole()
   const [tab,        setTab]        = useState<Tab>("users")
   const [showInvite, setShowInvite] = useState(false)
   const [showCreate, setShowCreate] = useState(false)
@@ -741,16 +986,29 @@ export default function UserManagementPage() {
 
   const pendingCount = requests.filter(r => r.status === "pending").length
 
-  function handleInvite(email: string, role: UserRole) {
-    setRequests(prev => [...prev, { id: nextId(prev), email, status: "invite-sent", role }])
+  function handleInvite(email: string, userRole: UserRole) {
+    setRequests(prev => [...prev, { id: nextId(prev), email, status: "invite-sent", role: userRole }])
     setShowInvite(false)
-    toast("Invite sent", `An invitation has been sent to ${email} as ${role}.`)
+    toast("Invite sent", `An invitation has been sent to ${email} as ${userRole}.`)
   }
 
   function handleCreateRole(name: string, permissions: string[], access: AccessType) {
     setRoles(prev => [...prev, { id: nextId(prev), name, permissions, access, members: [] }])
     setShowCreate(false)
     toast("Role created", `"${name}" has been created successfully.`)
+  }
+
+  // Project Manager gets a simplified scoped view
+  if (role === "Project Manager") {
+    return (
+      <div className="space-y-5">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">User Management</h1>
+          <p className="text-xs text-muted-foreground mt-0.5">Manage users assigned to your project(s).</p>
+        </div>
+        <PMUsersTab />
+      </div>
+    )
   }
 
   return (
@@ -774,7 +1032,7 @@ export default function UserManagementPage() {
       {/* Sub-tabs */}
       <div className="border-b border-border">
         <div className="flex gap-0">
-          {TAB_META.map(t => (
+          {ADMIN_TABS.map(t => (
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
