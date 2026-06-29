@@ -2,7 +2,6 @@
 
 import { useState } from "react"
 import { Monitor, Mail, ChevronDown, ChevronUp } from "lucide-react"
-import { useRole } from "@/lib/role-context"
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -37,36 +36,10 @@ const NOTIF_TYPES: NotifType[] = [
   { id: "reminders", label: "Reminders and deadlines",   description: "Reminders, due dates, and SLA updates",                enabled: true },
 ]
 
-interface PrefEvent {
-  id: string
-  label: string
-  description: string
-  enabled: boolean
-}
-
-const DEFAULT_PREF_EVENTS: PrefEvent[] = [
-  { id: "status-change",   label: "Project status changes",  description: "When a project transitions between Planned, Ongoing, and Completed", enabled: true  },
-  { id: "milestone",       label: "Milestone reached",        description: "When a project milestone is marked as completed",                      enabled: true  },
-  { id: "deadline-7",      label: "Deadline approaching",     description: "Reminder 7 days before a project deadline",                            enabled: true  },
-  { id: "new-project",     label: "New project added",        description: "When a new project is created in your portfolio",                      enabled: false },
-  { id: "overdue-update",  label: "Overdue updates",          description: "When a project update is past its scheduled due date",                 enabled: true  },
-  { id: "team-assign",     label: "Team member assignments",  description: "When someone is added to or removed from a project",                   enabled: false },
-]
-
-type Frequency = "realtime" | "daily" | "weekly"
-
-const FREQUENCIES: { id: Frequency; label: string; description: string }[] = [
-  { id: "realtime", label: "Real-time",     description: "As events happen"            },
-  { id: "daily",    label: "Daily digest",  description: "One summary email per day"   },
-  { id: "weekly",   label: "Weekly summary", description: "Every Monday morning"       },
-]
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function NotificationsSettingsPage() {
-  const { role } = useRole()
-  const canSetPreferences = role === "Project Manager" || role === "Admin"
-
   const [channels, setChannels] = useState<Channel[]>([
     { id: "desktop", label: "Desktop", icon: <Monitor className="h-4 w-4" />, notifTypes: NOTIF_TYPES.map(t => ({ ...t, enabled: false })) },
     { id: "email",   label: "Email",   icon: <Mail className="h-4 w-4" />,    notifTypes: NOTIF_TYPES.map(t => ({ ...t, enabled: true  })) },
@@ -74,10 +47,6 @@ export default function NotificationsSettingsPage() {
   const [expanded,       setExpanded]       = useState<string | null>("desktop")
   const [inviteAccepted, setInviteAccepted] = useState(true)
   const [privacyUpdates, setPrivacyUpdates] = useState(true)
-
-  // Preferences state — only relevant for PM / Admin
-  const [prefEvents,   setPrefEvents]   = useState<PrefEvent[]>(DEFAULT_PREF_EVENTS)
-  const [frequency,    setFrequency]    = useState<Frequency>("realtime")
 
   function toggleExpand(id: string) {
     setExpanded(prev => prev === id ? null : id)
@@ -92,10 +61,6 @@ export default function NotificationsSettingsPage() {
         ),
       }
     ))
-  }
-
-  function togglePrefEvent(id: string) {
-    setPrefEvents(prev => prev.map(e => e.id === id ? { ...e, enabled: !e.enabled } : e))
   }
 
   return (
@@ -154,60 +119,6 @@ export default function NotificationsSettingsPage() {
           })}
         </div>
       </section>
-
-      {/* ── Notification Preferences (PM / Admin only) ────────────────────── */}
-      {canSetPreferences && (
-        <section className="space-y-3">
-          <div>
-            <h2 className="text-base font-semibold">Notification preferences</h2>
-            <p className="text-sm text-muted-foreground mt-0.5">
-              Choose which events trigger notifications and how often you receive them.
-            </p>
-          </div>
-
-          {/* Event types */}
-          <div>
-            <p className="text-sm font-medium mb-2">What to notify about</p>
-            <div className="rounded-xl border border-border bg-card overflow-hidden divide-y divide-border">
-              {prefEvents.map(e => (
-                <div key={e.id} className="flex items-center justify-between px-5 py-3.5">
-                  <div>
-                    <p className="text-sm font-medium">{e.label}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">{e.description}</p>
-                  </div>
-                  <Toggle value={e.enabled} onChange={() => togglePrefEvent(e.id)} />
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Frequency */}
-          <div>
-            <p className="text-sm font-medium mb-2">How often</p>
-            <div className="rounded-xl border border-border bg-card overflow-hidden divide-y divide-border">
-              {FREQUENCIES.map(f => (
-                <button
-                  key={f.id}
-                  className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-muted/30 transition-colors text-left"
-                  onClick={() => setFrequency(f.id)}
-                >
-                  <div>
-                    <p className="text-sm font-medium">{f.label}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">{f.description}</p>
-                  </div>
-                  <span className={`h-4 w-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${
-                    frequency === f.id ? "border-primary" : "border-muted-foreground/40"
-                  }`}>
-                    {frequency === f.id && (
-                      <span className="h-2 w-2 rounded-full bg-primary" />
-                    )}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
 
       {/* ── Other Updates ─────────────────────────────────────────────────── */}
       <section className="space-y-3">
