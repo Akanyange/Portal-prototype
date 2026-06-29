@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { Plus, ChevronRight, CalendarDays, User, ExternalLink } from "lucide-react"
+import { Plus, ChevronRight, CalendarDays, User, ExternalLink, ChevronDown, ChevronUp } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { projects, PM_OWNED_PROJECT_IDS, STATUS_DOT, STATUS_LABEL, type TaskStatus, type GanttMilestone } from "@/lib/projects-data"
 import { useRole } from "@/lib/role-context"
@@ -45,6 +45,8 @@ const ROW_H    = 66
 
 const ACCORDION_H = 88
 
+const DEFAULT_VISIBLE = 7
+
 const TASK_BAR: Record<TaskStatus, string> = {
   "completed":   "bg-primary",
   "in-progress": "bg-primary",
@@ -62,6 +64,7 @@ export function GanttChart({ scope = "all" }: { scope?: "all" | "mine" }) {
   const [activeMilestone,  setActiveMilestone]  = useState<{ ms: GanttMilestone; projectId: string; msIdx: number } | null>(null)
   const [editingMilestone, setEditingMilestone] = useState<{ ms: GanttMilestone; projectId: string; msIdx: number } | null>(null)
   const [msOverrides, setMsOverrides] = useState<Record<string, Partial<GanttMilestone>>>({})
+  const [showAll, setShowAll] = useState(false)
 
   function getMilestone(projectId: string, msIdx: number, ms: GanttMilestone): GanttMilestone {
     const ov = msOverrides[`${projectId}-${msIdx}`]
@@ -108,6 +111,9 @@ export function GanttChart({ scope = "all" }: { scope?: "all" | "mine" }) {
     .filter(p => role !== "General User" || p.visibility === "Public")
     .filter(p => scope !== "mine" || PM_OWNED_PROJECT_IDS.has(p.id))
 
+  const displayedProjects = showAll ? visibleProjects : visibleProjects.slice(0, DEFAULT_VISIBLE)
+  const hiddenCount = visibleProjects.length - DEFAULT_VISIBLE
+
   useEffect(() => {
     setTodayFraction(getCurrentYearFraction())
   }, [])
@@ -144,7 +150,7 @@ export function GanttChart({ scope = "all" }: { scope?: "all" | "mine" }) {
           </div>
 
           {/* Project rows */}
-          {visibleProjects.map(project => {
+          {displayedProjects.map(project => {
             const isOpen  = expanded.has(project.id)
             const totalH  = isOpen ? ROW_H + ACCORDION_H : ROW_H
             return (
@@ -262,7 +268,7 @@ export function GanttChart({ scope = "all" }: { scope?: "all" | "mine" }) {
                 </div>
               )}
 
-              {visibleProjects.map(project => {
+              {displayedProjects.map(project => {
                 const isOpen = expanded.has(project.id)
                 const totalH = isOpen ? ROW_H + ACCORDION_H : ROW_H
                 return (
@@ -352,6 +358,26 @@ export function GanttChart({ scope = "all" }: { scope?: "all" | "mine" }) {
           </div>
         </div>
       </div>
+
+      {/* ── Show more / Show less ───────────────────────────────────────────── */}
+      {visibleProjects.length > DEFAULT_VISIBLE && (
+        <button
+          onClick={() => setShowAll(prev => !prev)}
+          className="w-full flex items-center justify-center gap-2 py-2.5 border-t text-xs font-medium text-muted-foreground hover:bg-muted/40 hover:text-foreground transition-colors"
+        >
+          {showAll ? (
+            <>
+              <ChevronUp className="h-3.5 w-3.5" />
+              Show less
+            </>
+          ) : (
+            <>
+              <ChevronDown className="h-3.5 w-3.5" />
+              Show {hiddenCount} more project{hiddenCount !== 1 ? "s" : ""}
+            </>
+          )}
+        </button>
+      )}
 
       {/* ── Milestone view modal ────────────────────────────────────────────── */}
       {activeMilestone && !editingMilestone && (
